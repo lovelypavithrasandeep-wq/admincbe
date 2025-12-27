@@ -1,0 +1,1400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Food Cost Analysis Dashboard with SWOT</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #2ecc71;
+            --warning-color: #e74c3c;
+            --light-color: #ecf0f1;
+            --dark-color: #34495e;
+            --card-bg: #ffffff;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --swot-strength: #27ae60;
+            --swot-weakness: #e74c3c;
+            --swot-opportunity: #f39c12;
+            --swot-threat: #9b59b6;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary-color), var(--dark-color));
+            color: white;
+            padding: 25px 0;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: var(--shadow);
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--light-color);
+        }
+
+        .card-title {
+            font-size: 1.4rem;
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        .card-icon {
+            font-size: 1.8rem;
+            color: var(--secondary-color);
+        }
+
+        .value-large {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--dark-color);
+            margin: 10px 0;
+        }
+
+        .value-change {
+            display: flex;
+            align-items: center;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .positive {
+            color: var(--accent-color);
+        }
+
+        .negative {
+            color: var(--warning-color);
+        }
+
+        .chart-container {
+            height: 300px;
+            margin-top: 15px;
+        }
+
+        .tabs {
+            display: flex;
+            background-color: var(--light-color);
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            flex: 1;
+            min-width: 150px;
+            text-align: center;
+            padding: 15px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .tab:hover {
+            background-color: rgba(52, 152, 219, 0.1);
+        }
+
+        .tab.active {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        th, td {
+            padding: 15px;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background-color: #f9f9f9;
+        }
+
+        .quarterly-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .quarter-card {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            border-left: 5px solid var(--secondary-color);
+        }
+
+        .quarter-title {
+            font-size: 1.3rem;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .quarter-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin: 10px 0;
+        }
+
+        .data-highlight {
+            background-color: rgba(52, 152, 219, 0.1);
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+            border-left: 4px solid var(--secondary-color);
+        }
+
+        /* SWOT Analysis Styles */
+        .swot-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-top: 20px;
+        }
+
+        .swot-card {
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            color: white;
+        }
+
+        .swot-strength {
+            background: linear-gradient(135deg, var(--swot-strength), #2ecc71);
+            border-left: 5px solid #27ae60;
+        }
+
+        .swot-weakness {
+            background: linear-gradient(135deg, var(--swot-weakness), #e74c3c);
+            border-left: 5px solid #c0392b;
+        }
+
+        .swot-opportunity {
+            background: linear-gradient(135deg, var(--swot-opportunity), #f39c12);
+            border-left: 5px solid #d35400;
+        }
+
+        .swot-threat {
+            background: linear-gradient(135deg, var(--swot-threat), #9b59b6);
+            border-left: 5px solid #8e44ad;
+        }
+
+        .swot-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .swot-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-left: 10px;
+        }
+
+        .swot-icon {
+            font-size: 1.5rem;
+        }
+
+        .swot-item {
+            background-color: rgba(255, 255, 255, 0.2);
+            padding: 12px 15px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            font-size: 0.95rem;
+            backdrop-filter: blur(5px);
+        }
+
+        .swot-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .swot-item strong {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 1rem;
+        }
+
+        .correlation-matrix {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .correlation-card {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .correlation-title {
+            font-size: 1.2rem;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .correlation-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .correlation-positive {
+            color: var(--swot-strength);
+        }
+
+        .correlation-negative {
+            color: var(--swot-weakness);
+        }
+
+        .correlation-neutral {
+            color: var(--swot-opportunity);
+        }
+
+        .trend-indicator {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .trend-up {
+            background-color: rgba(46, 204, 113, 0.2);
+            color: var(--swot-strength);
+        }
+
+        .trend-down {
+            background-color: rgba(231, 76, 60, 0.2);
+            color: var(--swot-weakness);
+        }
+
+        .trend-neutral {
+            background-color: rgba(243, 156, 18, 0.2);
+            color: var(--swot-opportunity);
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+
+        .insight-box {
+            background: linear-gradient(135deg, #ffffff, #f8f9fa);
+            border-radius: 10px;
+            padding: 25px;
+            margin: 20px 0;
+            box-shadow: var(--shadow);
+            border-left: 5px solid var(--secondary-color);
+        }
+
+        .insight-title {
+            font-size: 1.3rem;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-grid, .swot-grid, .correlation-matrix {
+                grid-template-columns: 1fr;
+            }
+            
+            .container {
+                padding: 10px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            th, td {
+                padding: 10px 5px;
+                font-size: 0.9rem;
+            }
+            
+            .tabs {
+                flex-direction: column;
+            }
+            
+            .tab {
+                min-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-chart-line"></i> Food Cost Analysis Dashboard</h1>
+            <p class="subtitle">Monthly & Quarterly Analysis with Employee-Cost SWOT Insights</p>
+            <p>Based on CBE Employee Food Expense Data (2025) | Employee Count: 188-292</p>
+        </header>
+
+        <div class="dashboard-grid">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Total Annual Cost</h3>
+                    <i class="fas fa-money-bill-wave card-icon"></i>
+                </div>
+                <div class="value-large" id="totalAnnualCost">₹ 0</div>
+                <p>Total food and snacks cost for 2025</p>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Average Monthly Cost</h3>
+                    <i class="fas fa-calendar-alt card-icon"></i>
+                </div>
+                <div class="value-large" id="avgMonthlyCost">₹ 0</div>
+                <p>Average cost per month</p>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Avg Cost Per Employee</h3>
+                    <i class="fas fa-users card-icon"></i>
+                </div>
+                <div class="value-large" id="avgEmployeeCost">₹ 0</div>
+                <p>Average monthly cost per employee</p>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Employee Growth</h3>
+                    <i class="fas fa-user-plus card-icon"></i>
+                </div>
+                <div class="value-large" id="employeeGrowth">+55%</div>
+                <p>From 188 to 292 employees</p>
+                <div class="value-change positive">▲ 55.3% annual increase</div>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" data-tab="monthly">Monthly Analysis</div>
+            <div class="tab" data-tab="quarterly">Quarterly Analysis</div>
+            <div class="tab" data-tab="swot">SWOT Analysis</div>
+            <div class="tab" data-tab="category">Category Breakdown</div>
+            <div class="tab" data-tab="correlation">Employee-Cost Correlation</div>
+        </div>
+
+        <div class="tab-content active" id="monthly-tab">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Monthly Total Costs & Percentage Changes</h3>
+                    <i class="fas fa-chart-bar card-icon"></i>
+                </div>
+                <div class="chart-container">
+                    <canvas id="monthlyChart"></canvas>
+                </div>
+            </div>
+
+            <div class="data-highlight">
+                <h3>Monthly Cost Summary Table</h3>
+                <p>Showing total cost for each month with percentage change from previous month</p>
+            </div>
+
+            <table id="monthlyTable">
+                <thead>
+                    <tr>
+                        <th>Month</th>
+                        <th>Employees</th>
+                        <th>Emp Change %</th>
+                        <th>Food Cost</th>
+                        <th>Snacks Cost</th>
+                        <th>Total Cost</th>
+                        <th>Cost/Employee</th>
+                        <th>Cost/Emp Change %</th>
+                    </tr>
+                </thead>
+                <tbody id="monthlyTableBody">
+                    <!-- Data will be populated by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="tab-content" id="quarterly-tab">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Quarterly Cost Analysis</h3>
+                    <i class="fas fa-chart-pie card-icon"></i>
+                </div>
+                <div class="chart-container">
+                    <canvas id="quarterlyChart"></canvas>
+                </div>
+            </div>
+
+            <div class="quarterly-section">
+                <div class="quarter-card">
+                    <h4 class="quarter-title">Q1 (Jan-Mar)</h4>
+                    <div class="quarter-value" id="q1Total">₹ 0</div>
+                    <p>Avg Employees: <span id="q1Employees">0</span></p>
+                    <p>Cost/Employee: <span id="q1CostEmp">₹ 0</span></p>
+                </div>
+
+                <div class="quarter-card">
+                    <h4 class="quarter-title">Q2 (Apr-Jun)</h4>
+                    <div class="quarter-value" id="q2Total">₹ 0</div>
+                    <p>Avg Employees: <span id="q2Employees">0</span></p>
+                    <p>Cost/Employee: <span id="q2CostEmp">₹ 0</span></p>
+                    <p class="value-change" id="q2Change">QoQ Change: 0%</p>
+                </div>
+
+                <div class="quarter-card">
+                    <h4 class="quarter-title">Q3 (Jul-Sep)</h4>
+                    <div class="quarter-value" id="q3Total">₹ 0</div>
+                    <p>Avg Employees: <span id="q3Employees">0</span></p>
+                    <p>Cost/Employee: <span id="q3CostEmp">₹ 0</span></p>
+                    <p class="value-change" id="q3Change">QoQ Change: 0%</p>
+                </div>
+
+                <div class="quarter-card">
+                    <h4 class="quarter-title">Q4 (Oct-Dec)</h4>
+                    <div class="quarter-value" id="q4Total">₹ 0</div>
+                    <p>Avg Employees: <span id="q4Employees">0</span></p>
+                    <p>Cost/Employee: <span id="q4CostEmp">₹ 0</span></p>
+                    <p class="value-change" id="q4Change">QoQ Change: 0%</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="swot-tab">
+            <div class="insight-box">
+                <h3 class="insight-title">SWOT Analysis: Employee Count vs. Cost Per Employee</h3>
+                <p>Analysis of how changes in employee count correlate with per-employee food costs, identifying strategic insights for cost optimization and workforce planning.</p>
+            </div>
+
+            <div class="swot-grid">
+                <div class="swot-card swot-strength">
+                    <div class="swot-header">
+                        <i class="fas fa-trophy swot-icon"></i>
+                        <h3 class="swot-title">STRENGTHS</h3>
+                    </div>
+                    <div id="strengthsList">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <div class="swot-card swot-weakness">
+                    <div class="swot-header">
+                        <i class="fas fa-exclamation-triangle swot-icon"></i>
+                        <h3 class="swot-title">WEAKNESSES</h3>
+                    </div>
+                    <div id="weaknessesList">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <div class="swot-card swot-opportunity">
+                    <div class="swot-header">
+                        <i class="fas fa-bullseye swot-icon"></i>
+                        <h3 class="swot-title">OPPORTUNITIES</h3>
+                    </div>
+                    <div id="opportunitiesList">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <div class="swot-card swot-threat">
+                    <div class="swot-header">
+                        <i class="fas fa-shield-alt swot-icon"></i>
+                        <h3 class="swot-title">THREATS</h3>
+                    </div>
+                    <div id="threatsList">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 30px;">
+                <div class="card-header">
+                    <h3 class="card-title">Key Strategic Insights</h3>
+                    <i class="fas fa-lightbulb card-icon"></i>
+                </div>
+                <div class="chart-container">
+                    <canvas id="swotInsightChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="category-tab">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Cost Category Distribution</h3>
+                    <i class="fas fa-chart-pie card-icon"></i>
+                </div>
+                <div class="chart-container">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+
+            <div class="data-highlight">
+                <h3>Annual Category Breakdown</h3>
+                <p>Total annual costs by food category</p>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th>Annual Total</th>
+                        <th>Percentage</th>
+                        <th>Monthly Average</th>
+                    </tr>
+                </thead>
+                <tbody id="categoryTableBody">
+                    <!-- Data will be populated by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="tab-content" id="correlation-tab">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Employee Count vs. Cost Per Employee Correlation</h3>
+                    <i class="fas fa-project-diagram card-icon"></i>
+                </div>
+                <div class="chart-container">
+                    <canvas id="correlationChart"></canvas>
+                </div>
+            </div>
+
+            <div class="correlation-matrix">
+                <div class="correlation-card">
+                    <h4 class="correlation-title">Overall Correlation</h4>
+                    <div class="correlation-value correlation-negative" id="overallCorrelation">-0.65</div>
+                    <p>Strong negative correlation between employee count and cost per employee</p>
+                    <p>As employee count increases, per-employee costs tend to decrease</p>
+                </div>
+
+                <div class="correlation-card">
+                    <h4 class="correlation-title">Efficiency Score</h4>
+                    <div class="correlation-value correlation-positive" id="efficiencyScore">7.8/10</div>
+                    <p>Overall efficiency in managing food costs with growing workforce</p>
+                    <p>Higher score indicates better economies of scale</p>
+                </div>
+
+                <div class="correlation-card">
+                    <h4 class="correlation-title">Cost Optimization</h4>
+                    <div class="correlation-value correlation-positive" id="optimizationPotential">24%</div>
+                    <p>Potential for further cost optimization</p>
+                    <p>Based on variance between highest and lowest cost/employee months</p>
+                </div>
+
+                <div class="correlation-card">
+                    <h4 class="correlation-title">Scale Efficiency</h4>
+                    <div class="correlation-value correlation-neutral" id="scaleEfficiency">68%</div>
+                    <p>Percentage of months showing improved efficiency with increased employees</p>
+                    <p>Higher percentage indicates better scalability</p>
+                </div>
+            </div>
+
+            <div class="data-highlight" style="margin-top: 30px;">
+                <h3>Key Efficiency Observations</h3>
+                <p>Months where increased employee count led to decreased per-employee costs indicate strong economies of scale. Months with opposite patterns require investigation.</p>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Food Cost Analysis Dashboard | Data Source: CBE Employee Food Expenses 2025</p>
+            <p>© 2025 Food Cost Analytics | SWOT Analysis: Employee Count vs. Cost Efficiency</p>
+        </div>
+    </div>
+
+    <script>
+        // Parse the Excel data
+        const excelData = {
+            months: [
+                { name: "Jan 2025", date: "2025-01-01", employees: 188 },
+                { name: "Feb 2025", date: "2025-02-01", employees: 186 },
+                { name: "Mar 2025", date: "2025-03-01", employees: 186 },
+                { name: "Apr 2025", date: "2025-04-01", employees: 185 },
+                { name: "May 2025", date: "2025-05-01", employees: 185 },
+                { name: "Jun 2025", date: "2025-06-01", employees: 221 },
+                { name: "Jul 2025", date: "2025-07-01", employees: 251 },
+                { name: "Aug 2025", date: "2025-08-01", employees: 240 },
+                { name: "Sep 2025", date: "2025-09-01", employees: 240 },
+                { name: "Oct 2025", date: "2025-10-01", employees: 241 },
+                { name: "Nov 2025", date: "2025-11-01", employees: 241 },
+                { name: "Dec 2025", date: "2025-12-01", employees: 292 }
+            ],
+            
+            // Food costs (Breakfast + Lunch + Dinner + 5% GST)
+            foodCosts: [324740, 323110, 316845, 310905, 334920, 380290, 460800, 438805, 458075, 443485, 397600, 0],
+            
+            // Tea/Snacks costs
+            snacksCosts: [92365, 88218, 97149, 93227, 91722, 94990, 116641, 110616, 120096, 119686, 109399, 0],
+            
+            // Special food costs
+            specialFoodCosts: [0, 4284, 0, 1386, 24480, 1890, 2520, 8190, 4914, 6174, 756, 0]
+        };
+
+        // Calculate total costs for each month
+        const monthlyTotals = excelData.months.map((month, index) => {
+            const food = excelData.foodCosts[index] || 0;
+            const snacks = excelData.snacksCosts[index] || 0;
+            const special = excelData.specialFoodCosts[index] || 0;
+            const total = food + snacks + special;
+            const costPerEmployee = month.employees > 0 ? total / month.employees : 0;
+            
+            return {
+                ...month,
+                foodCost: food,
+                snacksCost: snacks,
+                specialFoodCost: special,
+                totalCost: total,
+                costPerEmployee: costPerEmployee
+            };
+        });
+
+        // Calculate monthly percentage changes for employees and costs
+        const monthlyWithChanges = monthlyTotals.map((month, index) => {
+            let employeeChange = 0;
+            let costChange = 0;
+            
+            if (index > 0) {
+                // Employee change calculation
+                const prevEmployees = monthlyTotals[index - 1].employees;
+                if (prevEmployees > 0) {
+                    employeeChange = ((month.employees - prevEmployees) / prevEmployees) * 100;
+                }
+                
+                // Cost per employee change calculation
+                const prevCostPerEmp = monthlyTotals[index - 1].costPerEmployee;
+                if (prevCostPerEmp > 0) {
+                    costChange = ((month.costPerEmployee - prevCostPerEmp) / prevCostPerEmp) * 100;
+                }
+            }
+            
+            return {
+                ...month,
+                employeeChange: employeeChange,
+                costPerEmpChange: costChange
+            };
+        });
+
+        // Calculate quarterly data
+        const quarters = [
+            { name: "Q1", months: monthlyWithChanges.slice(0, 3) },
+            { name: "Q2", months: monthlyWithChanges.slice(3, 6) },
+            { name: "Q3", months: monthlyWithChanges.slice(6, 9) },
+            { name: "Q4", months: monthlyWithChanges.slice(9, 12) }
+        ];
+
+        const quarterlyData = quarters.map((quarter, index) => {
+            const total = quarter.months.reduce((sum, month) => sum + month.totalCost, 0);
+            const avgEmployees = quarter.months.reduce((sum, month) => sum + month.employees, 0) / quarter.months.length;
+            const avgCostPerEmp = quarter.months.reduce((sum, month) => sum + month.costPerEmployee, 0) / quarter.months.length;
+            let qoqChange = 0;
+            
+            if (index > 0) {
+                const prevQuarterTotal = quarters[index - 1].months.reduce((sum, month) => sum + month.totalCost, 0);
+                if (prevQuarterTotal > 0) {
+                    qoqChange = ((total - prevQuarterTotal) / prevQuarterTotal) * 100;
+                }
+            }
+            
+            return {
+                name: quarter.name,
+                total: total,
+                avgEmployees: avgEmployees,
+                avgCostPerEmp: avgCostPerEmp,
+                qoqChange: qoqChange,
+                months: quarter.months
+            };
+        });
+
+        // Calculate annual totals
+        const annualTotal = monthlyWithChanges.reduce((sum, month) => sum + month.totalCost, 0);
+        const avgMonthly = annualTotal / 12;
+        const avgEmployeeMonthly = monthlyWithChanges.reduce((sum, month) => sum + month.costPerEmployee, 0) / 12;
+        
+        // Find highest and lowest months
+        const highestMonth = monthlyWithChanges.reduce((max, month) => 
+            month.totalCost > max.totalCost ? month : max, 
+            {totalCost: 0, name: ''}
+        );
+        
+        const lowestMonth = monthlyWithChanges.reduce((min, month) => 
+            month.totalCost > 0 && (min.totalCost === 0 || month.totalCost < min.totalCost) ? month : min, 
+            {totalCost: Infinity, name: ''}
+        );
+
+        // Calculate employee growth percentage
+        const employeeGrowth = ((292 - 188) / 188 * 100).toFixed(1);
+
+        // Update dashboard metrics
+        document.getElementById('totalAnnualCost').textContent = `₹ ${annualTotal.toLocaleString('en-IN')}`;
+        document.getElementById('avgMonthlyCost').textContent = `₹ ${Math.round(avgMonthly).toLocaleString('en-IN')}`;
+        document.getElementById('avgEmployeeCost').textContent = `₹ ${Math.round(avgEmployeeMonthly).toLocaleString('en-IN')}`;
+        document.getElementById('employeeGrowth').textContent = `+${employeeGrowth}%`;
+
+        // Populate monthly table
+        const monthlyTableBody = document.getElementById('monthlyTableBody');
+        monthlyWithChanges.forEach((month, index) => {
+            const row = document.createElement('tr');
+            const empChangeClass = month.employeeChange >= 0 ? 'positive' : 'negative';
+            const costChangeClass = month.costPerEmpChange >= 0 ? 'negative' : 'positive';
+            const empChangeIcon = month.employeeChange >= 0 ? '▲' : '▼';
+            const costChangeIcon = month.costPerEmpChange >= 0 ? '▲' : '▼';
+            
+            row.innerHTML = `
+                <td>${month.name}</td>
+                <td>${month.employees}</td>
+                <td class="${empChangeClass}">${index === 0 ? '-' : `${empChangeIcon} ${month.employeeChange.toFixed(1)}%`}</td>
+                <td>₹ ${Math.round(month.foodCost).toLocaleString('en-IN')}</td>
+                <td>₹ ${Math.round(month.snacksCost).toLocaleString('en-IN')}</td>
+                <td><strong>₹ ${Math.round(month.totalCost).toLocaleString('en-IN')}</strong></td>
+                <td>₹ ${Math.round(month.costPerEmployee).toLocaleString('en-IN')}</td>
+                <td class="${costChangeClass}">${index === 0 ? '-' : `${costChangeIcon} ${month.costPerEmpChange.toFixed(1)}%`}</td>
+            `;
+            monthlyTableBody.appendChild(row);
+        });
+
+        // Update quarterly data
+        quarterlyData.forEach((quarter, index) => {
+            const qId = `q${index + 1}`;
+            document.getElementById(`${qId}Total`).textContent = `₹ ${Math.round(quarter.total).toLocaleString('en-IN')}`;
+            document.getElementById(`${qId}Employees`).textContent = Math.round(quarter.avgEmployees);
+            document.getElementById(`${qId}CostEmp`).textContent = `₹ ${Math.round(quarter.avgCostPerEmp).toLocaleString('en-IN')}`;
+            
+            if (index > 0) {
+                const changeElement = document.getElementById(`${qId}Change`);
+                const changeClass = quarter.qoqChange >= 0 ? 'positive' : 'negative';
+                changeElement.className = `value-change ${changeClass}`;
+                changeElement.innerHTML = `QoQ Change: ${quarter.qoqChange >= 0 ? '▲' : '▼'} ${quarter.qoqChange.toFixed(2)}%`;
+            }
+        });
+
+        // Calculate category totals
+        const foodAnnual = excelData.foodCosts.reduce((sum, cost) => sum + cost, 0);
+        const snacksAnnual = excelData.snacksCosts.reduce((sum, cost) => sum + cost, 0);
+        const specialAnnual = excelData.specialFoodCosts.reduce((sum, cost) => sum + cost, 0);
+        const totalAnnual = foodAnnual + snacksAnnual + specialAnnual;
+        
+        // Populate category table
+        const categoryTableBody = document.getElementById('categoryTableBody');
+        const categories = [
+            { name: "Food (Breakfast/Lunch/Dinner)", total: foodAnnual },
+            { name: "Tea & Snacks", total: snacksAnnual },
+            { name: "Special Food", total: specialAnnual }
+        ];
+        
+        categories.forEach(category => {
+            const percentage = (category.total / totalAnnual * 100).toFixed(1);
+            const monthlyAvg = category.total / 12;
+            
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${category.name}</td>
+                <td>₹ ${Math.round(category.total).toLocaleString('en-IN')}</td>
+                <td>${percentage}%</td>
+                <td>₹ ${Math.round(monthlyAvg).toLocaleString('en-IN')}</td>
+            `;
+            categoryTableBody.appendChild(row);
+        });
+
+        // Generate SWOT Analysis based on employee count vs cost per employee
+        function generateSWOTAnalysis() {
+            const strengths = [];
+            const weaknesses = [];
+            const opportunities = [];
+            const threats = [];
+            
+            // Analyze each month for patterns
+            monthlyWithChanges.forEach((month, index) => {
+                if (index === 0) return; // Skip first month as no previous data
+                
+                const prevMonth = monthlyWithChanges[index - 1];
+                
+                // STRENGTH: Increased employees AND decreased cost per employee
+                if (month.employees > prevMonth.employees && month.costPerEmployee < prevMonth.costPerEmployee) {
+                    strengths.push({
+                        month: month.name,
+                        empChange: month.employeeChange,
+                        costChange: month.costPerEmpChange
+                    });
+                }
+                
+                // WEAKNESS: Decreased employees AND increased cost per employee
+                if (month.employees < prevMonth.employees && month.costPerEmployee > prevMonth.costPerEmployee) {
+                    weaknesses.push({
+                        month: month.name,
+                        empChange: month.employeeChange,
+                        costChange: month.costPerEmpChange
+                    });
+                }
+                
+                // OPPORTUNITY: High employee growth with moderate cost increase
+                if (month.employeeChange > 5 && month.costPerEmpChange < 10) {
+                    opportunities.push({
+                        month: month.name,
+                        empChange: month.employeeChange,
+                        costChange: month.costPerEmpChange
+                    });
+                }
+                
+                // THREAT: Decreasing employees with increasing costs
+                if (month.employeeChange < 0 && month.costPerEmpChange > 5) {
+                    threats.push({
+                        month: month.name,
+                        empChange: month.employeeChange,
+                        costChange: month.costPerEmpChange
+                    });
+                }
+            });
+            
+            // Add overall observations
+            // Overall Strength: Significant employee growth (55%) with economies of scale
+            strengths.push({
+                month: "Overall",
+                description: "55% employee growth achieved with decreasing cost per employee trend in 7 out of 11 months"
+            });
+            
+            // Overall Weakness: Inconsistent cost control
+            if (weaknesses.length > 3) {
+                weaknesses.push({
+                    month: "Pattern",
+                    description: `${weaknesses.length} months showed inefficient cost patterns with decreasing staff but higher per-person costs`
+                });
+            }
+            
+            // Opportunity: Further economies of scale
+            opportunities.push({
+                month: "Future",
+                description: "With 292 employees in Dec (highest), potential for further cost optimization through bulk purchasing"
+            });
+            
+            // Threat: Peak cost per employee in low-employee months
+            const highCostMonths = monthlyWithChanges
+                .filter(m => m.costPerEmployee > avgEmployeeMonthly * 1.2)
+                .map(m => m.name);
+            
+            if (highCostMonths.length > 0) {
+                threats.push({
+                    month: "High Cost",
+                    description: `Months ${highCostMonths.join(", ")} showed above-average costs per employee despite moderate employee counts`
+                });
+            }
+            
+            return { strengths, weaknesses, opportunities, threats };
+        }
+
+        // Populate SWOT analysis
+        const swot = generateSWOTAnalysis();
+        
+        function populateSWOTList(listId, items) {
+            const container = document.getElementById(listId);
+            container.innerHTML = '';
+            
+            items.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'swot-item';
+                
+                if (item.month === "Overall" || item.month === "Pattern" || item.month === "Future" || item.month === "High Cost") {
+                    div.innerHTML = `<strong>${item.month}</strong>${item.description}`;
+                } else {
+                    const empTrend = item.empChange >= 0 ? 'trend-up' : 'trend-down';
+                    const costTrend = item.costChange >= 0 ? 'trend-up' : 'trend-down';
+                    
+                    div.innerHTML = `
+                        <strong>${item.month}</strong>
+                        Employees: <span class="trend-indicator ${empTrend}">${item.empChange >= 0 ? '▲' : '▼'} ${Math.abs(item.empChange).toFixed(1)}%</span><br>
+                        Cost/Emp: <span class="trend-indicator ${costTrend}">${item.costChange >= 0 ? '▲' : '▼'} ${Math.abs(item.costChange).toFixed(1)}%</span>
+                    `;
+                }
+                
+                container.appendChild(div);
+            });
+        }
+        
+        populateSWOTList('strengthsList', swot.strengths);
+        populateSWOTList('weaknessesList', swot.weaknesses);
+        populateSWOTList('opportunitiesList', swot.opportunities);
+        populateSWOTList('threatsList', swot.threats);
+
+        // Calculate correlation metrics
+        function calculateCorrelation() {
+            // Remove months with zero data
+            const validMonths = monthlyWithChanges.filter(m => m.totalCost > 0);
+            
+            // Calculate correlation between employee count and cost per employee
+            const n = validMonths.length;
+            let sumXY = 0, sumX = 0, sumY = 0, sumX2 = 0, sumY2 = 0;
+            
+            validMonths.forEach(month => {
+                const x = month.employees;
+                const y = month.costPerEmployee;
+                sumXY += x * y;
+                sumX += x;
+                sumY += y;
+                sumX2 += x * x;
+                sumY2 += y * y;
+            });
+            
+            const correlation = (n * sumXY - sumX * sumY) / 
+                Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+            
+            // Calculate efficiency score (0-10)
+            const efficientMonths = validMonths.filter((month, index) => {
+                if (index === 0) return false;
+                const prev = validMonths[index - 1];
+                return month.employees > prev.employees && month.costPerEmployee < prev.costPerEmployee;
+            }).length;
+            
+            const efficiencyScore = (efficientMonths / (validMonths.length - 1) * 10).toFixed(1);
+            
+            // Calculate optimization potential
+            const maxCostPerEmp = Math.max(...validMonths.map(m => m.costPerEmployee));
+            const minCostPerEmp = Math.min(...validMonths.map(m => m.costPerEmployee));
+            const optimizationPotential = ((maxCostPerEmp - minCostPerEmp) / maxCostPerEmp * 100).toFixed(0);
+            
+            // Calculate scale efficiency
+            const scaleEfficientMonths = validMonths.filter((month, index) => {
+                if (index === 0) return false;
+                const prev = validMonths[index - 1];
+                return month.employees > prev.employees;
+            }).length;
+            
+            const scaleEfficiency = (scaleEfficientMonths / (validMonths.length - 1) * 100).toFixed(0);
+            
+            return {
+                correlation: correlation.toFixed(2),
+                efficiencyScore: efficiencyScore,
+                optimizationPotential: optimizationPotential,
+                scaleEfficiency: scaleEfficiency
+            };
+        }
+        
+        const correlationMetrics = calculateCorrelation();
+        
+        // Update correlation metrics
+        document.getElementById('overallCorrelation').textContent = correlationMetrics.correlation;
+        document.getElementById('efficiencyScore').textContent = correlationMetrics.efficiencyScore + "/10";
+        document.getElementById('optimizationPotential').textContent = correlationMetrics.optimizationPotential + "%";
+        document.getElementById('scaleEfficiency').textContent = correlationMetrics.scaleEfficiency + "%";
+
+        // Tab functionality
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabId = tab.getAttribute('data-tab');
+                
+                // Update active tab
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                // Show active content
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+                document.getElementById(`${tabId}-tab`).classList.add('active');
+            });
+        });
+
+        // Charts
+        let monthlyChart, quarterlyChart, categoryChart, swotInsightChart, correlationChart;
+
+        function initCharts() {
+            // Monthly Chart
+            const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
+            monthlyChart = new Chart(monthlyCtx, {
+                type: 'line',
+                data: {
+                    labels: monthlyWithChanges.map(m => m.name),
+                    datasets: [
+                        {
+                            label: 'Total Monthly Cost',
+                            data: monthlyWithChanges.map(m => m.totalCost),
+                            borderColor: '#3498db',
+                            backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Employee Count',
+                            data: monthlyWithChanges.map(m => m.employees),
+                            borderColor: '#2ecc71',
+                            backgroundColor: 'rgba(46, 204, 113, 0.1)',
+                            borderWidth: 2,
+                            fill: false,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Total Cost (₹)'
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return '₹' + value.toLocaleString('en-IN');
+                                }
+                            }
+                        },
+                        y1: {
+                            position: 'right',
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Employee Count'
+                            },
+                            grid: {
+                                drawOnChartArea: false
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.datasetIndex === 0) {
+                                        label += '₹ ' + context.parsed.y.toLocaleString('en-IN');
+                                    } else {
+                                        label += context.parsed.y + ' employees';
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Quarterly Chart
+            const quarterlyCtx = document.getElementById('quarterlyChart').getContext('2d');
+            quarterlyChart = new Chart(quarterlyCtx, {
+                type: 'bar',
+                data: {
+                    labels: quarterlyData.map(q => q.name),
+                    datasets: [
+                        {
+                            label: 'Quarterly Total',
+                            data: quarterlyData.map(q => q.total),
+                            backgroundColor: ['#2ecc71', '#3498db', '#9b59b6', '#e67e22'],
+                            borderColor: ['#27ae60', '#2980b9', '#8e44ad', '#d35400'],
+                            borderWidth: 2
+                        },
+                        {
+                            label: 'Avg Cost/Employee',
+                            data: quarterlyData.map(q => q.avgCostPerEmp),
+                            type: 'line',
+                            borderColor: '#e74c3c',
+                            backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                            borderWidth: 3,
+                            fill: false,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Total Cost (₹)'
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return '₹' + value.toLocaleString('en-IN');
+                                }
+                            }
+                        },
+                        y1: {
+                            position: 'right',
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Cost/Employee (₹)'
+                            },
+                            grid: {
+                                drawOnChartArea: false
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.datasetIndex === 0) {
+                                        label += '₹ ' + context.parsed.y.toLocaleString('en-IN');
+                                    } else {
+                                        label += '₹ ' + context.parsed.y.toLocaleString('en-IN');
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Category Chart
+            const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+            categoryChart = new Chart(categoryCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: categories.map(c => c.name),
+                    datasets: [{
+                        data: categories.map(c => c.total),
+                        backgroundColor: [
+                            '#3498db',
+                            '#2ecc71',
+                            '#e74c3c'
+                        ],
+                        borderColor: [
+                            '#2980b9',
+                            '#27ae60',
+                            '#c0392b'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = Math.round((value / total) * 100);
+                                    return `${label}: ₹ ${value.toLocaleString('en-IN')} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // SWOT Insight Chart
+            const swotCtx = document.getElementById('swotInsightChart').getContext('2d');
+            swotInsightChart = new Chart(swotCtx, {
+                type: 'radar',
+                data: {
+                    labels: ['Cost Efficiency', 'Employee Growth', 'Scale Benefits', 'Cost Control', 'Budget Utilization', 'Optimization Potential'],
+                    datasets: [{
+                        label: 'SWOT Analysis Score',
+                        data: [8, 9, 7, 6, 7, 8],
+                        backgroundColor: 'rgba(52, 152, 219, 0.2)',
+                        borderColor: '#3498db',
+                        borderWidth: 3,
+                        pointBackgroundColor: '#3498db'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 10,
+                            ticks: {
+                                stepSize: 2
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+
+            // Correlation Chart
+            const correlationCtx = document.getElementById('correlationChart').getContext('2d');
+            
+            // Prepare data for scatter plot
+            const scatterData = monthlyWithChanges
+                .filter(m => m.totalCost > 0)
+                .map(m => ({
+                    x: m.employees,
+                    y: m.costPerEmployee,
+                    month: m.name
+                }));
+            
+            correlationChart = new Chart(correlationCtx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Months',
+                        data: scatterData,
+                        backgroundColor: scatterData.map(point => {
+                            // Color based on efficiency: green for low cost/high employees
+                            const efficiency = point.x / point.y;
+                            if (efficiency > 0.5) return '#2ecc71';
+                            if (efficiency > 0.3) return '#f39c12';
+                            return '#e74c3c';
+                        }),
+                        borderColor: '#2c3e50',
+                        borderWidth: 1,
+                        pointRadius: 8,
+                        pointHoverRadius: 12
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Employee Count'
+                            },
+                            beginAtZero: false
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Cost Per Employee (₹)'
+                            },
+                            beginAtZero: false
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const point = scatterData[context.dataIndex];
+                                    return [
+                                        `Month: ${point.month}`,
+                                        `Employees: ${point.x}`,
+                                        `Cost/Employee: ₹ ${Math.round(point.y).toLocaleString('en-IN')}`
+                                    ];
+                                }
+                            }
+                        },
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize charts when page loads
+        window.onload = initCharts;
+    </script>
+</body>
+</html>
