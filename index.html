@@ -1,0 +1,3398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cost Analysis Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+        }
+        
+        .subtitle {
+            color: #7f8c8d;
+            font-size: 1.2rem;
+        }
+        
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .stat-card h3 {
+            color: #7f8c8d;
+            font-size: 1rem;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+        
+        .highlight {
+            color: #e74c3c;
+        }
+        
+        .employee-stat {
+            border-left: 5px solid #3498db;
+        }
+        
+        .total-expense-stat {
+            border-left: 5px solid #e74c3c;
+        }
+        
+        .avg-expense-stat {
+            border-left: 5px solid #2ecc71;
+        }
+        
+        .peak-month-stat {
+            border-left: 5px solid #f39c12;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        @media (max-width: 1100px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .chart-container, .table-container {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+        
+        .chart-container h2, .table-container h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .chart-container h2 i, .table-container h2 i {
+            color: #3498db;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .data-table th {
+            background-color: #f8f9fa;
+            color: #2c3e50;
+            font-weight: 600;
+            text-align: left;
+            padding: 15px;
+            border-bottom: 2px solid #dee2e6;
+        }
+        
+        .data-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .data-table tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .expense-value {
+            text-align: right;
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+        }
+        
+        .total-row {
+            background-color: #f8f9fa;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+        
+        .month-header {
+            background-color: #f1f8ff;
+            font-weight: 600;
+        }
+        
+        .category-filter {
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .filter-btn {
+            padding: 8px 15px;
+            background-color: #ecf0f1;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        
+        .filter-btn:hover {
+            background-color: #d5dbdb;
+        }
+        
+        .filter-btn.active {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+        
+        .chart-wrapper {
+            position: relative;
+            height: 300px;
+            margin-top: 20px;
+        }
+        
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        
+        .tab:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .tab.active {
+            border-bottom: 3px solid #3498db;
+            color: #3498db;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .no-data {
+            color: #7f8c8d;
+            font-style: italic;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .insights-container {
+            margin-top: 30px;
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+        }
+        
+        .insight-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .insight-item:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+        
+        .insight-icon {
+            background-color: #3498db;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+        
+        .insight-text {
+            flex: 1;
+        }
+        
+        .insight-title {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .insight-desc {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+        
+        .percentage-change {
+            font-weight: 600;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+        
+        .percentage-increase {
+            color: #e74c3c;
+            background-color: rgba(231, 76, 60, 0.1);
+        }
+        
+        .percentage-decrease {
+            color: #27ae60;
+            background-color: rgba(39, 174, 96, 0.1);
+        }
+        
+        .percentage-neutral {
+            color: #7f8c8d;
+            background-color: rgba(127, 140, 141, 0.1);
+        }
+        
+        .per-employee-table {
+            font-size: 0.9rem;
+        }
+        
+        .per-employee-table th, .per-employee-table td {
+            text-align: right;
+            padding: 8px 10px;
+        }
+        
+        .per-employee-table th:first-child, .per-employee-table td:first-child {
+            text-align: left;
+        }
+        
+        .per-employee-table .month-change {
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .per-employee-table .category-header {
+            background-color: #f1f8ff;
+            font-weight: 600;
+        }
+        
+        .per-employee-table .subcategory-row {
+            background-color: #fafafa;
+        }
+        
+        .category-selector {
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .category-selector select {
+            padding: 8px 15px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            background-color: white;
+            font-size: 1rem;
+            min-width: 200px;
+        }
+        
+        .trend-indicator {
+            display: inline-block;
+            margin-left: 5px;
+            font-size: 0.8rem;
+        }
+        
+        .trend-up {
+            color: #e74c3c;
+        }
+        
+        .trend-down {
+            color: #27ae60;
+        }
+        
+        .trend-neutral {
+            color: #7f8c8d;
+        }
+        
+        .highlight-cell {
+            background-color: rgba(52, 152, 219, 0.1);
+            font-weight: 600;
+        }
+        
+        .per-employee-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .per-employee-stat {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .per-employee-stat h4 {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        
+        .per-employee-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+        
+        .per-employee-change {
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+        
+        .quarterly-table {
+            font-size: 0.9rem;
+        }
+        
+        .quarterly-table th, .quarterly-table td {
+            text-align: right;
+            padding: 10px 12px;
+            min-width: 120px;
+        }
+        
+        .quarterly-table th:first-child, .quarterly-table td:first-child {
+            text-align: left;
+            min-width: 180px;
+        }
+        
+        .quarterly-table .quarter-change {
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .quarterly-table .quarter-header {
+            background-color: #f1f8ff;
+            font-weight: 600;
+        }
+        
+        .quarterly-table .quarter-total {
+            background-color: #f8f9fa;
+            font-weight: 700;
+        }
+        
+        .quarterly-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .quarterly-stat {
+            background-color: white;
+            border-radius: 8px;
+            padding: 15px;
+            border-left: 4px solid #9b59b6;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .quarterly-stat h4 {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        
+        .quarterly-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+        
+        .quarterly-change {
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+        
+        .quarter-tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 20px;
+        }
+        
+        .quarter-tab {
+            padding: 8px 20px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        
+        .quarter-tab:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .quarter-tab.active {
+            border-bottom: 3px solid #9b59b6;
+            color: #9b59b6;
+        }
+        
+        .quarter-content {
+            display: none;
+        }
+        
+        .quarter-content.active {
+            display: block;
+        }
+        
+        .quarter-breakdown-table {
+            font-size: 0.85rem;
+        }
+        
+        .quarter-breakdown-table th, .quarter-breakdown-table td {
+            padding: 8px 10px;
+        }
+        
+        .quarter-breakdown-table th {
+            background-color: #f8f9fa;
+        }
+        
+        .quarter-category-selector {
+            margin: 20px 0;
+        }
+        
+        .quarterly-chart-wrapper {
+            position: relative;
+            height: 280px;
+            margin-top: 20px;
+        }
+        
+        .monthly-analysis-table {
+            font-size: 0.85rem;
+        }
+        
+        .monthly-analysis-table th, .monthly-analysis-table td {
+            text-align: right;
+            padding: 8px 6px;
+            min-width: 100px;
+        }
+        
+        .monthly-analysis-table th:first-child, .monthly-analysis-table td:first-child {
+            text-align: left;
+            min-width: 160px;
+            position: sticky;
+            left: 0;
+            background-color: white;
+            z-index: 1;
+        }
+        
+        .monthly-analysis-table .category-header {
+            background-color: #f1f8ff;
+            font-weight: 600;
+        }
+        
+        .monthly-analysis-table .month-change-cell {
+            padding: 6px 4px;
+        }
+        
+        .monthly-analysis-table .highest-increase {
+            background-color: rgba(231, 76, 60, 0.15);
+        }
+        
+        .monthly-analysis-table .highest-decrease {
+            background-color: rgba(39, 174, 96, 0.15);
+        }
+        
+        .monthly-analysis-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .monthly-analysis-stat {
+            background-color: white;
+            border-radius: 8px;
+            padding: 15px;
+            border-left: 4px solid #e67e22;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .monthly-analysis-stat h4 {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        
+        .monthly-analysis-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+        
+        .monthly-analysis-change {
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+        
+        .monthly-trend-chart-wrapper {
+            position: relative;
+            height: 320px;
+            margin-top: 20px;
+        }
+        
+        .monthly-analysis-insights {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+        
+        .monthly-analysis-insights h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .monthly-analysis-insights ul {
+            padding-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .monthly-analysis-insights li {
+            margin-bottom: 8px;
+            color: #555;
+        }
+        
+        .monthly-analysis-insights .insight-highlight {
+            font-weight: 600;
+            color: #e74c3c;
+        }
+        
+        .monthly-analysis-filter {
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .monthly-analysis-filter select {
+            padding: 8px 15px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            background-color: white;
+            font-size: 1rem;
+            min-width: 200px;
+        }
+        
+        .monthly-analysis-filter .filter-label {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .employee-impact-table {
+            font-size: 0.85rem;
+        }
+        
+        .employee-impact-table th, .employee-impact-table td {
+            text-align: right;
+            padding: 8px 6px;
+            min-width: 100px;
+        }
+        
+        .employee-impact-table th:first-child, .employee-impact-table td:first-child {
+            text-align: left;
+            min-width: 180px;
+            position: sticky;
+            left: 0;
+            background-color: white;
+            z-index: 1;
+        }
+        
+        .employee-impact-table .employee-count-cell {
+            background-color: #f1f8ff;
+            font-weight: 600;
+        }
+        
+        .employee-impact-table .employee-change-cell {
+            background-color: #f8f9fa;
+        }
+        
+        .employee-impact-table .expense-per-employee-cell {
+            background-color: rgba(52, 152, 219, 0.1);
+        }
+        
+        .employee-impact-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .employee-impact-stat {
+            background-color: white;
+            border-radius: 8px;
+            padding: 15px;
+            border-left: 4px solid #16a085;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .employee-impact-stat h4 {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        
+        .employee-impact-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+        
+        .employee-impact-change {
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+        
+        .employee-impact-chart-wrapper {
+            position: relative;
+            height: 350px;
+            margin-top: 20px;
+        }
+        
+        .employee-impact-insights {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+        
+        .employee-impact-insights h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .employee-impact-insights ul {
+            padding-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .employee-impact-insights li {
+            margin-bottom: 8px;
+            color: #555;
+        }
+        
+        .employee-impact-insights .insight-highlight {
+            font-weight: 600;
+            color: #16a085;
+        }
+        
+        .employee-impact-filter {
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .employee-impact-filter select {
+            padding: 8px 15px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            background-color: white;
+            font-size: 1rem;
+            min-width: 200px;
+        }
+        
+        .employee-impact-filter .filter-label {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .efficiency-metric {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-left: 5px;
+        }
+        
+        .efficiency-high {
+            background-color: rgba(39, 174, 96, 0.15);
+            color: #27ae60;
+        }
+        
+        .efficiency-medium {
+            background-color: rgba(241, 196, 15, 0.15);
+            color: #f39c12;
+        }
+        
+        .efficiency-low {
+            background-color: rgba(231, 76, 60, 0.15);
+            color: #e74c3c;
+        }
+        
+        .correlation-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-left: 5px;
+        }
+        
+        .correlation-strong {
+            background-color: rgba(52, 152, 219, 0.15);
+            color: #3498db;
+        }
+        
+        .correlation-moderate {
+            background-color: rgba(155, 89, 182, 0.15);
+            color: #9b59b6;
+        }
+        
+        .correlation-weak {
+            background-color: rgba(149, 165, 166, 0.15);
+            color: #95a5a6;
+        }
+        
+        .employee-growth-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        
+        .growth-high {
+            background-color: #27ae60;
+        }
+        
+        .growth-medium {
+            background-color: #f39c12;
+        }
+        
+        .growth-low {
+            background-color: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Cost Analysis Dashboard</h1>
+            <p class="subtitle">Monthly expenditure breakdown for the fiscal year 2025</p>
+        </header>
+        
+        <div class="stats-container">
+            <div class="stat-card employee-stat">
+                <h3>Average Employee Strength</h3>
+                <div class="stat-value">212</div>
+                <p>Peak: 292 in Dec 2025</p>
+            </div>
+            
+            <div class="stat-card total-expense-stat">
+                <h3>Total Annual Expense</h3>
+                <div class="stat-value">₹2.36 Cr</div>
+                <p>Across all categories</p>
+            </div>
+            
+            <div class="stat-card avg-expense-stat">
+                <h3>Average Monthly Expense</h3>
+                <div class="stat-value">₹19.67 L</div>
+                <p>Excluding one-time expenses</p>
+            </div>
+            
+            <div class="stat-card peak-month-stat">
+                <h3>Highest Expense Month</h3>
+                <div class="stat-value">May 2025</div>
+                <p>₹36.22 L (Annual Day Expense)</p>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <div class="chart-container">
+                <h2><i class="fas fa-chart-line"></i> Expense Trends</h2>
+                
+                <div class="tabs">
+                    <div class="tab active" data-tab="total">Total Expenses</div>
+                    <div class="tab" data-tab="major">Major Categories</div>
+                    <div class="tab" data-tab="employee">Employee Strength</div>
+                    <div class="tab" data-tab="perEmployee">Cost Per Employee</div>
+                    <div class="tab" data-tab="quarterly">Quarterly Analysis</div>
+                    <div class="tab" data-tab="monthly">Monthly Analysis</div>
+                    <div class="tab" data-tab="employeeImpact">Employee Impact Analysis</div>
+                </div>
+                
+                <div class="tab-content active" id="total-tab">
+                    <div class="chart-wrapper">
+                        <canvas id="totalExpenseChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="major-tab">
+                    <div class="chart-wrapper">
+                        <canvas id="categoryExpenseChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="employee-tab">
+                    <div class="chart-wrapper">
+                        <canvas id="employeeChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="perEmployee-tab">
+                    <div class="per-employee-summary">
+                        <div class="per-employee-stat">
+                            <h4>Avg. Cost per Employee</h4>
+                            <div class="per-employee-value">₹9,292</div>
+                            <div class="per-employee-change">
+                                <span class="percentage-increase">+12.5% vs Jan</span>
+                            </div>
+                        </div>
+                        <div class="per-employee-stat">
+                            <h4>Highest Cost per Emp</h4>
+                            <div class="per-employee-value">₹19,580</div>
+                            <div class="per-employee-change">May 2025</div>
+                        </div>
+                        <div class="per-employee-stat">
+                            <h4>Lowest Cost per Emp</h4>
+                            <div class="per-employee-value">₹5,056</div>
+                            <div class="per-employee-change">Jan 2025</div>
+                        </div>
+                        <div class="per-employee-stat">
+                            <h4>Avg. Food Cost per Emp</h4>
+                            <div class="per-employee-value">₹2,392</div>
+                            <div class="per-employee-change">
+                                <span class="percentage-increase">+21.7% vs Jan</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="category-selector">
+                        <label for="perEmployeeCategorySelect"><strong>Select Category:</strong></label>
+                        <select id="perEmployeeCategorySelect">
+                            <option value="total">Total Expense</option>
+                            <option value="TICEL">TICEL</option>
+                            <option value="Food">Food</option>
+                            <option value="Transport">Transport</option>
+                            <option value="House keeping">House Keeping</option>
+                            <option value="Security">Security</option>
+                            <option value="Water">Water</option>
+                        </select>
+                        <span id="categoryTrendIndicator" class="trend-indicator"></span>
+                    </div>
+                    
+                    <div class="chart-wrapper">
+                        <canvas id="perEmployeeChart"></canvas>
+                    </div>
+                    
+                    <div style="margin-top: 30px; overflow-x: auto;">
+                        <h3><i class="fas fa-table"></i> Per Employee Cost Analysis</h3>
+                        <p style="margin-bottom: 15px; color: #7f8c8d;">Values show cost per employee with month-to-month percentage change</p>
+                        <table class="data-table per-employee-table" id="perEmployeeDetailTable">
+                            <thead>
+                                <tr>
+                                    <th>Category</th>
+                                    <th>Jan</th>
+                                    <th>Feb <span class="trend-neutral">(vs Jan)</span></th>
+                                    <th>Mar <span class="trend-neutral">(vs Feb)</span></th>
+                                    <th>Apr <span class="trend-neutral">(vs Mar)</span></th>
+                                    <th>May <span class="trend-neutral">(vs Apr)</span></th>
+                                    <th>Jun <span class="trend-neutral">(vs May)</span></th>
+                                    <th>Jul <span class="trend-neutral">(vs Jun)</span></th>
+                                    <th>Aug <span class="trend-neutral">(vs Jul)</span></th>
+                                    <th>Sep <span class="trend-neutral">(vs Aug)</span></th>
+                                    <th>Oct <span class="trend-neutral">(vs Sep)</span></th>
+                                    <th>Nov <span class="trend-neutral">(vs Oct)</span></th>
+                                    <th>Dec <span class="trend-neutral">(vs Nov)</span></th>
+                                </tr>
+                            </thead>
+                            <tbody id="perEmployeeTableBody">
+                                <!-- Table will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="quarterly-tab">
+                    <div class="quarterly-summary">
+                        <div class="quarterly-stat">
+                            <h4>Q1 Total Expense</h4>
+                            <div class="quarterly-value">₹56.98 L</div>
+                            <div class="quarterly-change">Jan-Mar 2025</div>
+                        </div>
+                        <div class="quarterly-stat">
+                            <h4>Q2 Total Expense</h4>
+                            <div class="quarterly-value">₹74.99 L</div>
+                            <div class="quarterly-change">
+                                <span class="percentage-increase">+31.6% vs Q1</span>
+                            </div>
+                        </div>
+                        <div class="quarterly-stat">
+                            <h4>Q3 Total Expense</h4>
+                            <div class="quarterly-value">₹58.64 L</div>
+                            <div class="quarterly-change">
+                                <span class="percentage-decrease">-21.8% vs Q2</span>
+                            </div>
+                        </div>
+                        <div class="quarterly-stat">
+                            <h4>Q4 Total Expense</h4>
+                            <div class="quarterly-value">₹52.44 L</div>
+                            <div class="quarterly-change">
+                                <span class="percentage-decrease">-10.6% vs Q3</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="quarter-tabs">
+                        <div class="quarter-tab active" data-quarter="all">All Quarters</div>
+                        <div class="quarter-tab" data-quarter="q1">Q1 (Jan-Mar)</div>
+                        <div class="quarter-tab" data-quarter="q2">Q2 (Apr-Jun)</div>
+                        <div class="quarter-tab" data-quarter="q3">Q3 (Jul-Sep)</div>
+                        <div class="quarter-tab" data-quarter="q4">Q4 (Oct-Dec)</div>
+                    </div>
+                    
+                    <div class="quarter-content active" id="quarter-all">
+                        <div style="overflow-x: auto; margin-bottom: 30px;">
+                            <h3><i class="fas fa-chart-bar"></i> Quarterly Expense Comparison</h3>
+                            <table class="data-table quarterly-table" id="quarterlyComparisonTable">
+                                <thead>
+                                    <tr>
+                                        <th>Category</th>
+                                        <th>Q1 Total<br><span style="font-weight: normal; color: #7f8c8d;">Jan-Mar</span></th>
+                                        <th>Q2 Total<br><span style="font-weight: normal; color: #7f8c8d;">Apr-Jun</span></th>
+                                        <th>Q2 vs Q1</th>
+                                        <th>Q3 Total<br><span style="font-weight: normal; color: #7f8c8d;">Jul-Sep</span></th>
+                                        <th>Q3 vs Q2</th>
+                                        <th>Q4 Total<br><span style="font-weight: normal; color: #7f8c8d;">Oct-Dec</span></th>
+                                        <th>Q4 vs Q3</th>
+                                        <th>Annual Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="quarterlyTableBody">
+                                    <!-- Table will be populated by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="quarterly-chart-wrapper">
+                            <canvas id="quarterlyChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="quarter-content" id="quarter-q1">
+                        <h3><i class="fas fa-calendar"></i> Q1 Breakdown (January - March 2025)</h3>
+                        <p style="margin-bottom: 15px; color: #7f8c8d;">Total Q1 Expense: ₹56,98,258.98</p>
+                        <div style="overflow-x: auto;">
+                            <table class="data-table quarterly-table quarter-breakdown-table">
+                                <thead>
+                                    <tr>
+                                        <th>Category</th>
+                                        <th>January</th>
+                                        <th>February</th>
+                                        <th>March</th>
+                                        <th>Q1 Total</th>
+                                        <th>% of Q1 Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="q1BreakdownBody">
+                                    <!-- Will be populated by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="quarter-content" id="quarter-q2">
+                        <h3><i class="fas fa-calendar"></i> Q2 Breakdown (April - June 2025)</h3>
+                        <p style="margin-bottom: 15px; color: #7f8c8d;">Total Q2 Expense: ₹74,99,018.77</p>
+                        <div style="overflow-x: auto;">
+                            <table class="data-table quarterly-table quarter-breakdown-table">
+                                <thead>
+                                    <tr>
+                                        <th>Category</th>
+                                        <th>April</th>
+                                        <th>May</th>
+                                        <th>June</th>
+                                        <th>Q2 Total</th>
+                                        <th>% of Q2 Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="q2BreakdownBody">
+                                    <!-- Will be populated by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="quarter-content" id="quarter-q3">
+                        <h3><i class="fas fa-calendar"></i> Q3 Breakdown (July - September 2025)</h3>
+                        <p style="margin-bottom: 15px; color: #7f8c8d;">Total Q3 Expense: ₹58,64,365.80</p>
+                        <div style="overflow-x: auto;">
+                            <table class="data-table quarterly-table quarter-breakdown-table">
+                                <thead>
+                                    <tr>
+                                        <th>Category</th>
+                                        <th>July</th>
+                                        <th>August</th>
+                                        <th>September</th>
+                                        <th>Q3 Total</th>
+                                        <th>% of Q3 Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="q3BreakdownBody">
+                                    <!-- Will be populated by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="quarter-content" id="quarter-q4">
+                        <h3><i class="fas fa-calendar"></i> Q4 Breakdown (October - December 2025)</h3>
+                        <p style="margin-bottom: 15px; color: #7f8c8d;">Total Q4 Expense: ₹52,44,649.41</p>
+                        <div style="overflow-x: auto;">
+                            <table class="data-table quarterly-table quarter-breakdown-table">
+                                <thead>
+                                    <tr>
+                                        <th>Category</th>
+                                        <th>October</th>
+                                        <th>November</th>
+                                        <th>December</th>
+                                        <th>Q4 Total</th>
+                                        <th>% of Q4 Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="q4BreakdownBody">
+                                    <!-- Will be populated by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="quarter-category-selector">
+                        <label for="quarterCategorySelect"><strong>Select Category for Trend Analysis:</strong></label>
+                        <select id="quarterCategorySelect">
+                            <option value="total">Total Expense</option>
+                            <option value="TICEL">TICEL</option>
+                            <option value="Food">Food</option>
+                            <option value="Transport">Transport</option>
+                            <option value="House keeping">House Keeping</option>
+                            <option value="Security">Security</option>
+                        </select>
+                    </div>
+                    
+                    <div class="quarterly-chart-wrapper">
+                        <canvas id="quarterlyTrendChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="monthly-tab">
+                    <div class="monthly-analysis-summary">
+                        <div class="monthly-analysis-stat">
+                            <h4>Largest Monthly Increase</h4>
+                            <div class="monthly-analysis-value">+85.3%</div>
+                            <div class="monthly-analysis-change">Apr to May (Total Expense)</div>
+                        </div>
+                        <div class="monthly-analysis-stat">
+                            <h4>Largest Monthly Decrease</h4>
+                            <div class="monthly-analysis-value">-46.0%</div>
+                            <div class="monthly-analysis-change">May to Jun (Total Expense)</div>
+                        </div>
+                        <div class="monthly-analysis-stat">
+                            <h4>Most Consistent Category</h4>
+                            <div class="monthly-analysis-value">Security</div>
+                            <div class="monthly-analysis-change">0% change for 6 months</div>
+                        </div>
+                        <div class="monthly-analysis-stat">
+                            <h4>Most Volatile Category</h4>
+                            <div class="monthly-analysis-value">Annual Day</div>
+                            <div class="monthly-analysis-change">One-time expense in May</div>
+                        </div>
+                    </div>
+                    
+                    <div class="monthly-analysis-filter">
+                        <div class="filter-label">Filter by:</div>
+                        <select id="monthlyAnalysisCategoryFilter">
+                            <option value="all">All Categories</option>
+                            <option value="major">Major Categories Only</option>
+                            <option value="operational">Operational Categories</option>
+                            <option value="hr">HR & Admin Categories</option>
+                        </select>
+                        <select id="monthlyAnalysisMonthFilter">
+                            <option value="all">All Month Transitions</option>
+                            <option value="highestIncrease">Highest Increases</option>
+                            <option value="highestDecrease">Highest Decreases</option>
+                            <option value="stable">Most Stable (0-5% change)</option>
+                        </select>
+                    </div>
+                    
+                    <div style="overflow-x: auto; max-height: 500px; margin-bottom: 30px;">
+                        <h3><i class="fas fa-exchange-alt"></i> Month-to-Month Percentage Changes</h3>
+                        <p style="margin-bottom: 15px; color: #7f8c8d;">Percentage changes between consecutive months for each category</p>
+                        <table class="data-table monthly-analysis-table" id="monthlyAnalysisTable">
+                            <thead>
+                                <tr>
+                                    <th>Category</th>
+                                    <th>Feb vs Jan</th>
+                                    <th>Mar vs Feb</th>
+                                    <th>Apr vs Mar</th>
+                                    <th>May vs Apr</th>
+                                    <th>Jun vs May</th>
+                                    <th>Jul vs Jun</th>
+                                    <th>Aug vs Jul</th>
+                                    <th>Sep vs Aug</th>
+                                    <th>Oct vs Sep</th>
+                                    <th>Nov vs Oct</th>
+                                    <th>Dec vs Nov</th>
+                                </tr>
+                            </thead>
+                            <tbody id="monthlyAnalysisTableBody">
+                                <!-- Table will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="monthly-trend-chart-wrapper">
+                        <canvas id="monthlyTrendChart"></canvas>
+                    </div>
+                    
+                    <div class="monthly-analysis-insights">
+                        <h3><i class="fas fa-chart-line"></i> Monthly Change Insights</h3>
+                        <ul>
+                            <li><span class="insight-highlight">May showed the highest monthly increase (+85.3%)</span> due to Annual Day expenses</li>
+                            <li><span class="insight-highlight">Security costs remained unchanged for 6 months</span> before increasing in August</li>
+                            <li><span class="insight-highlight">Food costs increased steadily</span> with a peak increase of +21.7% in July vs June</li>
+                            <li><span class="insight-highlight">Transport costs were most volatile</span> with changes ranging from -50.3% to +49.6%</li>
+                            <li><span class="insight-highlight">TICEL expenses remained relatively stable</span> with changes mostly within ±10%</li>
+                            <li><span class="insight-highlight">December data shows incomplete records</span> for most categories</li>
+                        </ul>
+                        <div style="margin-top: 15px; font-style: italic; color: #7f8c8d;">
+                            <i class="fas fa-info-circle"></i> Note: Percentage changes are calculated only when both months have non-zero values
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="employeeImpact-tab">
+                    <div class="employee-impact-summary">
+                        <div class="employee-impact-stat">
+                            <h4>Employee Growth</h4>
+                            <div class="employee-impact-value">+55%</div>
+                            <div class="employee-impact-change">Jan to Dec 2025</div>
+                        </div>
+                        <div class="employee-impact-stat">
+                            <h4>Expense per Emp Growth</h4>
+                            <div class="employee-impact-value">+12.5%</div>
+                            <div class="employee-impact-change">
+                                <span class="percentage-increase">+12.5% per employee</span>
+                            </div>
+                        </div>
+                        <div class="employee-impact-stat">
+                            <h4>Most Efficient Scale</h4>
+                            <div class="employee-impact-value">241 Employees</div>
+                            <div class="employee-impact-change">Lowest cost per employee</div>
+                        </div>
+                        <div class="employee-impact-stat">
+                            <h4>Economies of Scale</h4>
+                            <div class="employee-impact-value">₹2,392</div>
+                            <div class="employee-impact-change">Food cost per employee at peak efficiency</div>
+                        </div>
+                    </div>
+                    
+                    <div class="employee-impact-filter">
+                        <div class="filter-label">Analyze Impact on:</div>
+                        <select id="employeeImpactCategoryFilter">
+                            <option value="total">Total Expense</option>
+                            <option value="TICEL">TICEL</option>
+                            <option value="Food">Food</option>
+                            <option value="Transport">Transport</option>
+                            <option value="House keeping">House Keeping</option>
+                            <option value="Security">Security</option>
+                            <option value="Water">Water</option>
+                        </select>
+                        <select id="employeeImpactMetricFilter">
+                            <option value="perEmployee">Cost Per Employee</option>
+                            <option value="correlation">Correlation with Employee Count</option>
+                            <option value="growthComparison">Employee vs Expense Growth</option>
+                        </select>
+                    </div>
+                    
+                    <div class="employee-impact-chart-wrapper">
+                        <canvas id="employeeImpactChart"></canvas>
+                    </div>
+                    
+                    <div style="overflow-x: auto; max-height: 500px; margin-bottom: 30px;">
+                        <h3><i class="fas fa-users"></i> Employee Strength Impact Analysis</h3>
+                        <p style="margin-bottom: 15px; color: #7f8c8d;">Analysis of expenses relative to employee count across months</p>
+                        <table class="data-table employee-impact-table" id="employeeImpactTable">
+                            <thead>
+                                <tr>
+                                    <th>Category</th>
+                                    <th>Jan<br><span style="font-weight: normal;">Emp: 188</span></th>
+                                    <th>Feb<br><span style="font-weight: normal;">Emp: 186 <span class="percentage-decrease">-1.1%</span></span></th>
+                                    <th>Mar<br><span style="font-weight: normal;">Emp: 186 <span class="percentage-neutral">0.0%</span></span></th>
+                                    <th>Apr<br><span style="font-weight: normal;">Emp: 185 <span class="percentage-decrease">-0.5%</span></span></th>
+                                    <th>May<br><span style="font-weight: normal;">Emp: 185 <span class="percentage-neutral">0.0%</span></span></th>
+                                    <th>Jun<br><span style="font-weight: normal;">Emp: 221 <span class="percentage-increase">+19.5%</span></span></th>
+                                    <th>Jul<br><span style="font-weight: normal;">Emp: 251 <span class="percentage-increase">+13.6%</span></span></th>
+                                    <th>Aug<br><span style="font-weight: normal;">Emp: 240 <span class="percentage-decrease">-4.4%</span></span></th>
+                                    <th>Sep<br><span style="font-weight: normal;">Emp: 240 <span class="percentage-neutral">0.0%</span></span></th>
+                                    <th>Oct<br><span style="font-weight: normal;">Emp: 241 <span class="percentage-increase">+0.4%</span></span></th>
+                                    <th>Nov<br><span style="font-weight: normal;">Emp: 241 <span class="percentage-neutral">0.0%</span></span></th>
+                                    <th>Dec<br><span style="font-weight: normal;">Emp: 292 <span class="percentage-increase">+21.2%</span></span></th>
+                                </tr>
+                            </thead>
+                            <tbody id="employeeImpactTableBody">
+                                <!-- Table will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="employee-impact-insights">
+                        <h3><i class="fas fa-lightbulb"></i> Employee Impact Insights</h3>
+                        <ul>
+                            <li><span class="insight-highlight">Total expenses increased slower (+24.4%) than employee count (+55.3%)</span>, showing economies of scale</li>
+                            <li><span class="insight-highlight">Food expenses per employee decreased by 21.7%</span> despite overall food costs increasing, showing efficient scaling</li>
+                            <li><span class="insight-highlight">Transport costs increased faster (+102.9%) than employee growth</span>, indicating inefficiencies in transport management</li>
+                            <li><span class="insight-highlight">June showed the best efficiency</span> with 221 employees and ₹19.58L total expense (₹8,862 per employee)</li>
+                            <li><span class="insight-highlight">TICEL expenses scaled efficiently</span> with only +17.2% increase despite +55.3% employee growth</li>
+                            <li><span class="insight-highlight">Security costs showed fixed-cost nature</span> with no increase for 7 months despite employee growth</li>
+                        </ul>
+                        <div style="margin-top: 15px; font-style: italic; color: #7f8c8d;">
+                            <i class="fas fa-info-circle"></i> Analysis compares expense growth rates with employee growth rates to identify scaling efficiencies
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="insights-container">
+                    <h3><i class="fas fa-lightbulb"></i> Key Insights</h3>
+                    <div class="insight-item">
+                        <div class="insight-icon">
+                            <i class="fas fa-utensils"></i>
+                        </div>
+                        <div class="insight-text">
+                            <div class="insight-title">Food is the largest recurring expense</div>
+                            <div class="insight-desc">Food costs average ₹5.07L monthly, peaking at ₹6.08L in July</div>
+                        </div>
+                    </div>
+                    <div class="insight-item">
+                        <div class="insight-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="insight-text">
+                            <div class="insight-title">Employee count increased by 55%</div>
+                            <div class="insight-desc">From 188 in January to 292 in December 2025</div>
+                        </div>
+                    </div>
+                    <div class="insight-item">
+                        <div class="insight-icon">
+                            <i class="fas fa-calendar-day"></i>
+                        </div>
+                        <div class="insight-text">
+                            <div class="insight-title">May had exceptional expenses</div>
+                            <div class="insight-desc">₹16.23L Annual Day Expense caused May's total to be 85% above average</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="table-container">
+                <h2><i class="fas fa-table"></i> Detailed Cost Analysis</h2>
+                
+                <div class="category-filter">
+                    <button class="filter-btn active" data-category="all">All Categories</button>
+                    <button class="filter-btn" data-category="major">Major Expenses</button>
+                    <button class="filter-btn" data-category="operational">Operational</button>
+                    <button class="filter-btn" data-category="hr">HR & Admin</button>
+<a href="food cost analysis.html">Go to food cost analysis</a>
+                </div>
+                
+                <div class="table-wrapper">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>Jan</th>
+                                <th>Feb</th>
+                                <th>Mar</th>
+                                <th>Apr</th>
+                                <th>May</th>
+                                <th>Jun</th>
+                                <th>Jul</th>
+                                <th>Aug</th>
+                                <th>Sep</th>
+                                    <th>Oct</th>
+                                <th>Nov</th>
+                                <th>Dec</th>
+                            </tr>
+                        </thead>
+                        <tbody id="expense-table-body">
+                            <!-- Table will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Cost Analysis Dashboard • Data from fiscal year 2025 • Generated from PDF document</p>
+            <p><i class="fas fa-info-circle"></i> All values in Indian Rupees (₹)</p>
+        </div>
+    </div>
+
+    <script>
+        // Data extracted from the PDF
+        const expenseData = {
+            months: ['Jan-25', 'Feb-25', 'Mar-25', 'Apr-25', 'May-25', 'Jun-25', 'Jul-25', 'Aug-25', 'Sep-25', 'Oct-25', 'Nov-25', 'Dec-25'],
+            employeeStrength: [188, 186, 186, 185, 185, 221, 251, 240, 240, 241, 241, 292],
+            categories: {
+                'TICEL': [956561.62, 1066450.30, 1107108.38, 1094147.26, 1104256.32, 1096290.93, 1089708.57, 1111018.19, 1136888.51, 1136299.10, 1120788.59, 1120788.59],
+                'Food': [437960.25, 436178.40, 434693.70, 425724.60, 472502.10, 500934.00, 608833.05, 585082.05, 617663.55, 595193.55, 533104.95, 473000.00],
+                'Transport': [116850.00, 174790.00, 178810.00, 179415.00, 237880.00, 219880.00, 214085.00, 202410.00, 244130.00, 244500.00, 237040.00, 252000.00],
+                'House keeping': [36580.00, 53563.57, 53563.57, 53650.67, 54870.00, 54870.00, 54870.00, 63100.50, 63100.50, 63100.50, 63100.50, 63100.50],
+                'Security': [41300.00, 41300.00, 41300.00, 41300.00, 41300.00, 41300.00, 41300.00, 47495.00, 47495.00, 47495.00, 47495.00, 47495.00],
+                'Water': [8160.00, 6330.00, 6060.00, 6300.00, 7800.00, 8100.00, 8700.00, 8040.00, 8460.00, 8490.00, 8520.00, 0],
+                'Printer': [511.65, 175.11, 522.50, 660.33, 408.75, 1328.21, 1248.91, 716.02, 339.84, 460.20, 363.91, 0],
+                'Stationary': [11234.00, 2083.00, 7570.00, 10162.00, 16241.00, 5160.00, 16002.00, 8939.00, 6573.00, 4848.00, 5710.00, 0],
+                'Mobile': [5524.81, 5524.81, 5524.12, 10146.88, 8297.00, 8169.00, 8168.47, 8168.00, 8168.00, 8168.00, 8168.00, 0],
+                'Petty Cash': [46176.88, 18478.28, 18787.00, 18195.00, 15380.00, 22370.00, 29965.50, 12547.00, 24486.33, 9625.06, 16898.90, 0],
+                'Sports': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                'Marriage Contribution': [0, 20000.00, 30000.00, 0, 40000.00, 0, 0, 0, 20000.00, 0, 10000.00, 20000.00],
+                'Annual Day Expense': [0, 0, 0, 0, 1623391.26, 0, 0, 0, 0, 0, 0, 0],
+                'Office Insurance': [0, 0, 0, 0, 0, 0, 0, 0, 19743.00, 0, 0, 0],
+                'PT Remittance': [0, 0, 296245.00, 0, 0, 0, 0, 0, 0, 340070.00, 0, 0],
+                'Office maintenance': [32450.00, 0, 0, 0, 0, 0, 0, 0, 0, 71553.00, 14998.00, 0],
+                'Office Celebrations': [0, 0, 0, 62181.00, 0, 0, 0, 0, 0, 70500.00, 30969.00, 0],
+                'Project Party': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                'RECRUITMENT': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+            },
+            categoryTypes: {
+                'major': ['TICEL', 'Food', 'Transport'],
+                'operational': ['House keeping', 'Security', 'Water', 'Printer', 'Stationary', 'Mobile', 'Petty Cash'],
+                'hr': ['Sports', 'Marriage Contribution', 'Annual Day Expense', 'Office Insurance', 'PT Remittance', 'Office maintenance', 'Office Celebrations', 'Project Party', 'RECRUITMENT']
+            }
+        };
+
+        // Quarterly data structure
+        const quarterlyData = {
+            quarters: ['Q1 (Jan-Mar)', 'Q2 (Apr-Jun)', 'Q3 (Jul-Sep)', 'Q4 (Oct-Dec)'],
+            quarterMonths: {
+                'Q1': [0, 1, 2],    // Jan, Feb, Mar
+                'Q2': [3, 4, 5],    // Apr, May, Jun
+                'Q3': [6, 7, 8],    // Jul, Aug, Sep
+                'Q4': [9, 10, 11]   // Oct, Nov, Dec
+            }
+        };
+
+        // Format currency in Indian format
+        function formatCurrency(amount) {
+            if (amount === 0) return '-';
+            if (amount < 1000) return '₹' + amount.toFixed(2);
+            
+            // Convert to lakhs for large amounts
+            if (amount >= 100000) {
+                const inLakhs = amount / 100000;
+                return '₹' + inLakhs.toFixed(2) + 'L';
+            }
+            
+            // Format with commas for thousands
+            return '₹' + amount.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+        
+        // Format number with commas
+        function formatNumber(num) {
+            return num.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+        
+        // Format number in lakhs
+        function formatInLakhs(amount) {
+            const inLakhs = amount / 100000;
+            return '₹' + inLakhs.toFixed(2) + 'L';
+        }
+        
+        // Calculate cost per employee
+        function calculateCostPerEmployee() {
+            const costPerEmployee = {};
+            const monthlyTotals = calculateMonthlyTotals();
+            
+            // Calculate total cost per employee
+            costPerEmployee.total = monthlyTotals.map((total, index) => {
+                return expenseData.employeeStrength[index] > 0 ? total / expenseData.employeeStrength[index] : 0;
+            });
+            
+            // Calculate cost per employee for each category
+            Object.keys(expenseData.categories).forEach(category => {
+                costPerEmployee[category] = expenseData.categories[category].map((amount, index) => {
+                    return expenseData.employeeStrength[index] > 0 ? amount / expenseData.employeeStrength[index] : 0;
+                });
+            });
+            
+            return costPerEmployee;
+        }
+        
+        // Calculate percentage change between values
+        function calculatePercentageChange(prevValue, currentValue) {
+            if (prevValue === 0 || prevValue === null || currentValue === 0 || currentValue === null) {
+                return null;
+            }
+            return ((currentValue - prevValue) / prevValue) * 100;
+        }
+        
+        // Calculate month-to-month percentage changes for all categories
+        function calculateMonthlyChanges() {
+            const monthlyChanges = {};
+            
+            // Calculate for each category
+            Object.keys(expenseData.categories).forEach(category => {
+                monthlyChanges[category] = [];
+                const amounts = expenseData.categories[category];
+                
+                for (let i = 0; i < amounts.length; i++) {
+                    if (i === 0) {
+                        monthlyChanges[category].push(null); // No previous month for Jan
+                    } else {
+                        monthlyChanges[category].push(calculatePercentageChange(amounts[i-1], amounts[i]));
+                    }
+                }
+            });
+            
+            // Calculate for total
+            const monthlyTotals = calculateMonthlyTotals();
+            monthlyChanges.total = [];
+            for (let i = 0; i < monthlyTotals.length; i++) {
+                if (i === 0) {
+                    monthlyChanges.total.push(null);
+                } else {
+                    monthlyChanges.total.push(calculatePercentageChange(monthlyTotals[i-1], monthlyTotals[i]));
+                }
+            }
+            
+            return monthlyChanges;
+        }
+        
+        // Calculate percentage change between quarters
+        function calculateQuarterlyPercentageChanges(quarterlyValues) {
+            const changes = [];
+            
+            for (let i = 0; i < quarterlyValues.length; i++) {
+                if (i === 0) {
+                    changes.push(null); // No previous quarter for Q1
+                } else {
+                    const prevValue = quarterlyValues[i-1];
+                    const currentValue = quarterlyValues[i];
+                    changes.push(calculatePercentageChange(prevValue, currentValue));
+                }
+            }
+            
+            return changes;
+        }
+        
+        // Calculate employee percentage changes
+        function calculateEmployeeChanges() {
+            const employeeChanges = [];
+            
+            for (let i = 0; i < expenseData.employeeStrength.length; i++) {
+                if (i === 0) {
+                    employeeChanges.push(null); // No previous month for Jan
+                } else {
+                    employeeChanges.push(calculatePercentageChange(
+                        expenseData.employeeStrength[i-1], 
+                        expenseData.employeeStrength[i]
+                    ));
+                }
+            }
+            
+            return employeeChanges;
+        }
+        
+        // Calculate expense growth vs employee growth
+        function calculateExpenseVsEmployeeGrowth() {
+            const growthComparison = {};
+            const employeeChanges = calculateEmployeeChanges();
+            const monthlyChanges = calculateMonthlyChanges();
+            
+            // Calculate for total and each category
+            Object.keys(monthlyChanges).forEach(category => {
+                growthComparison[category] = [];
+                const expenseChanges = monthlyChanges[category];
+                
+                for (let i = 0; i < expenseChanges.length; i++) {
+                    if (i === 0 || expenseChanges[i] === null || employeeChanges[i] === null) {
+                        growthComparison[category].push(null);
+                    } else {
+                        // Calculate difference between expense growth and employee growth
+                        growthComparison[category].push(expenseChanges[i] - employeeChanges[i]);
+                    }
+                }
+            });
+            
+            return growthComparison;
+        }
+        
+        // Calculate correlation between employee count and expenses
+        function calculateCorrelation(category = 'total') {
+            const employeeCounts = expenseData.employeeStrength;
+            let expenses = [];
+            
+            if (category === 'total') {
+                expenses = calculateMonthlyTotals();
+            } else {
+                expenses = expenseData.categories[category] || Array(12).fill(0);
+            }
+            
+            // Filter out months with zero expenses or employee count
+            const validPairs = [];
+            for (let i = 0; i < employeeCounts.length; i++) {
+                if (employeeCounts[i] > 0 && expenses[i] > 0) {
+                    validPairs.push({
+                        employees: employeeCounts[i],
+                        expense: expenses[i]
+                    });
+                }
+            }
+            
+            if (validPairs.length < 2) return 0;
+            
+            // Calculate correlation coefficient
+            const n = validPairs.length;
+            let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0, sumY2 = 0;
+            
+            validPairs.forEach(pair => {
+                sumX += pair.employees;
+                sumY += pair.expense;
+                sumXY += pair.employees * pair.expense;
+                sumX2 += pair.employees * pair.employees;
+                sumY2 += pair.expense * pair.expense;
+            });
+            
+            const numerator = (n * sumXY) - (sumX * sumY);
+            const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+            
+            return denominator !== 0 ? numerator / denominator : 0;
+        }
+        
+        // Get percentage change class based on value
+        function getPercentageClass(value) {
+            if (value === null || value === 0) return 'percentage-neutral';
+            if (value > 0) return 'percentage-increase';
+            if (value < 0) return 'percentage-decrease';
+            return 'percentage-neutral';
+        }
+        
+        // Format percentage value
+        function formatPercentage(value) {
+            if (value === null || value === undefined) return '-';
+            if (value === 0) return '0%';
+            return (value > 0 ? '+' : '') + value.toFixed(1) + '%';
+        }
+        
+        // Get efficiency class based on value
+        function getEfficiencyClass(value) {
+            if (value === null) return 'efficiency-medium';
+            if (value < -10) return 'efficiency-high'; // Expense grew slower than employees
+            if (value > 10) return 'efficiency-low'; // Expense grew faster than employees
+            return 'efficiency-medium';
+        }
+        
+        // Get correlation class based on value
+        function getCorrelationClass(value) {
+            if (Math.abs(value) >= 0.7) return 'correlation-strong';
+            if (Math.abs(value) >= 0.3) return 'correlation-moderate';
+            return 'correlation-weak';
+        }
+        
+        // Format correlation value
+        function formatCorrelation(value) {
+            if (value === 0) return 'No correlation';
+            const absValue = Math.abs(value);
+            if (absValue >= 0.7) return 'Strong ' + (value > 0 ? 'positive' : 'negative');
+            if (absValue >= 0.3) return 'Moderate ' + (value > 0 ? 'positive' : 'negative');
+            return 'Weak ' + (value > 0 ? 'positive' : 'negative');
+        }
+
+        // Calculate total expenses per month
+        function calculateMonthlyTotals() {
+            const monthlyTotals = Array(12).fill(0);
+            
+            Object.values(expenseData.categories).forEach(category => {
+                category.forEach((amount, monthIndex) => {
+                    monthlyTotals[monthIndex] += amount;
+                });
+            });
+            
+            return monthlyTotals;
+        }
+        
+        // Calculate quarterly totals
+        function calculateQuarterlyTotals() {
+            const quarterlyTotals = {
+                'Q1': 0,
+                'Q2': 0,
+                'Q3': 0,
+                'Q4': 0
+            };
+            
+            const categoryQuarterlyTotals = {};
+            
+            // Initialize category quarterly totals
+            Object.keys(expenseData.categories).forEach(category => {
+                categoryQuarterlyTotals[category] = {
+                    'Q1': 0,
+                    'Q2': 0,
+                    'Q3': 0,
+                    'Q4': 0
+                };
+            });
+            
+            // Calculate totals for each quarter
+            Object.keys(quarterlyData.quarterMonths).forEach(quarter => {
+                const monthIndices = quarterlyData.quarterMonths[quarter];
+                
+                // Calculate total for this quarter
+                let quarterTotal = 0;
+                
+                // Calculate for each category
+                Object.entries(expenseData.categories).forEach(([category, amounts]) => {
+                    let categoryQuarterTotal = 0;
+                    
+                    monthIndices.forEach(monthIndex => {
+                        categoryQuarterTotal += amounts[monthIndex];
+                    });
+                    
+                    categoryQuarterlyTotals[category][quarter] = categoryQuarterTotal;
+                    quarterTotal += categoryQuarterTotal;
+                });
+                
+                quarterlyTotals[quarter] = quarterTotal;
+            });
+            
+            return {
+                totals: quarterlyTotals,
+                categoryTotals: categoryQuarterlyTotals
+            };
+        }
+        
+        // Find extreme monthly changes
+        function findExtremeMonthlyChanges() {
+            const monthlyChanges = calculateMonthlyChanges();
+            const allChanges = [];
+            
+            // Collect all percentage changes
+            Object.keys(monthlyChanges).forEach(category => {
+                monthlyChanges[category].forEach((change, monthIndex) => {
+                    if (change !== null && change !== 0) {
+                        allChanges.push({
+                            category,
+                            monthIndex,
+                            change,
+                            monthPair: `${expenseData.months[monthIndex-1]} to ${expenseData.months[monthIndex]}`
+                        });
+                    }
+                });
+            });
+            
+            // Sort by absolute value of change
+            allChanges.sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
+            
+            // Find highest increases and decreases
+            const highestIncreases = allChanges.filter(c => c.change > 0).slice(0, 5);
+            const highestDecreases = allChanges.filter(c => c.change < 0).slice(0, 5);
+            
+            return {
+                highestIncreases,
+                highestDecreases,
+                allChanges
+            };
+        }
+        
+        // Calculate employee growth impact metrics
+        function calculateEmployeeImpactMetrics() {
+            const metrics = {};
+            const employeeChanges = calculateEmployeeChanges();
+            const monthlyChanges = calculateMonthlyChanges();
+            const costPerEmployee = calculateCostPerEmployee();
+            
+            // Calculate for each category
+            Object.keys(monthlyChanges).forEach(category => {
+                metrics[category] = {
+                    employeeGrowth: employeeChanges,
+                    expenseGrowth: monthlyChanges[category],
+                    costPerEmployee: costPerEmployee[category] || Array(12).fill(0),
+                    growthDifference: []
+                };
+                
+                // Calculate growth difference (expense growth - employee growth)
+                for (let i = 0; i < employeeChanges.length; i++) {
+                    if (employeeChanges[i] === null || monthlyChanges[category][i] === null) {
+                        metrics[category].growthDifference.push(null);
+                    } else {
+                        metrics[category].growthDifference.push(monthlyChanges[category][i] - employeeChanges[i]);
+                    }
+                }
+                
+                // Calculate overall growth from Jan to Nov (excluding Dec with incomplete data)
+                const janExpense = category === 'total' ? calculateMonthlyTotals()[0] : expenseData.categories[category][0];
+                const novExpense = category === 'total' ? calculateMonthlyTotals()[10] : expenseData.categories[category][10];
+                const janEmployees = expenseData.employeeStrength[0];
+                const novEmployees = expenseData.employeeStrength[10];
+                
+                metrics[category].overallExpenseGrowth = calculatePercentageChange(janExpense, novExpense);
+                metrics[category].overallEmployeeGrowth = calculatePercentageChange(janEmployees, novEmployees);
+                metrics[category].overallGrowthDifference = metrics[category].overallExpenseGrowth - metrics[category].overallEmployeeGrowth;
+                
+                // Calculate correlation
+                metrics[category].correlation = calculateCorrelation(category === 'total' ? 'total' : category);
+            });
+            
+            return metrics;
+        }
+
+        // Render the expense table
+        function renderExpenseTable(filter = 'all') {
+            const tableBody = document.getElementById('expense-table-body');
+            tableBody.innerHTML = '';
+            
+            // Add employee strength row
+            let employeeRow = '<tr><td class="month-header">Employee Strength</td>';
+            expenseData.employeeStrength.forEach(count => {
+                employeeRow += `<td>${count}</td>`;
+            });
+            employeeRow += '</tr>';
+            tableBody.innerHTML += employeeRow;
+            
+            // Add category rows based on filter
+            Object.entries(expenseData.categories).forEach(([category, amounts]) => {
+                // Skip categories based on filter
+                if (filter !== 'all') {
+                    let categoryFound = false;
+                    
+                    if (filter === 'major' && expenseData.categoryTypes.major.includes(category)) {
+                        categoryFound = true;
+                    } else if (filter === 'operational' && expenseData.categoryTypes.operational.includes(category)) {
+                        categoryFound = true;
+                    } else if (filter === 'hr' && expenseData.categoryTypes.hr.includes(category)) {
+                        categoryFound = true;
+                    }
+                    
+                    if (!categoryFound) return;
+                }
+                
+                let row = `<tr><td>${category}</td>`;
+                
+                amounts.forEach(amount => {
+                    row += `<td class="expense-value">${formatCurrency(amount)}</td>`;
+                });
+                
+                row += '</tr>';
+                tableBody.innerHTML += row;
+            });
+            
+            // Add total row
+            const monthlyTotals = calculateMonthlyTotals();
+            let totalRow = '<tr class="total-row"><td>Total Expense</td>';
+            
+            monthlyTotals.forEach(total => {
+                totalRow += `<td class="expense-value">${formatCurrency(total)}</td>`;
+            });
+            
+            totalRow += '</tr>';
+            tableBody.innerHTML += totalRow;
+        }
+        
+        // Render per employee analysis table
+        function renderPerEmployeeTable() {
+            const tableBody = document.getElementById('perEmployeeTableBody');
+            tableBody.innerHTML = '';
+            
+            const costPerEmployee = calculateCostPerEmployee();
+            const monthlyTotals = calculateMonthlyTotals();
+            
+            // Calculate percentage changes for total
+            const totalChanges = calculateQuarterlyPercentageChanges(costPerEmployee.total);
+            
+            // Add total row
+            let totalRow = '<tr class="category-header"><td><strong>Total Expense</strong></td>';
+            
+            costPerEmployee.total.forEach((value, index) => {
+                totalRow += `<td class="highlight-cell">₹${value.toFixed(0)}`;
+                if (index > 0 && totalChanges[index] !== null) {
+                    totalRow += `<br><span class="month-change ${getPercentageClass(totalChanges[index])}">${formatPercentage(totalChanges[index])}</span>`;
+                }
+                totalRow += '</td>';
+            });
+            
+            totalRow += '</tr>';
+            tableBody.innerHTML = totalRow;
+            
+            // Add major categories
+            expenseData.categoryTypes.major.forEach(category => {
+                const values = costPerEmployee[category];
+                const changes = calculateQuarterlyPercentageChanges(values);
+                
+                let row = `<tr class="subcategory-row"><td>${category}</td>`;
+                
+                values.forEach((value, index) => {
+                    row += `<td>₹${value.toFixed(0)}`;
+                    if (index > 0 && changes[index] !== null) {
+                        row += `<br><span class="month-change ${getPercentageClass(changes[index])}">${formatPercentage(changes[index])}</span>`;
+                    }
+                    row += '</td>';
+                });
+                
+                row += '</tr>';
+                tableBody.innerHTML += row;
+            });
+            
+            // Add operational categories
+            expenseData.categoryTypes.operational.forEach(category => {
+                const values = costPerEmployee[category];
+                const changes = calculateQuarterlyPercentageChanges(values);
+                
+                let row = `<tr><td>${category}</td>`;
+                
+                values.forEach((value, index) => {
+                    row += `<td>₹${value.toFixed(0)}`;
+                    if (index > 0 && changes[index] !== null && value > 0) {
+                        row += `<br><span class="month-change ${getPercentageClass(changes[index])}">${formatPercentage(changes[index])}</span>`;
+                    }
+                    row += '</td>';
+                });
+                
+                row += '</tr>';
+                tableBody.innerHTML += row;
+            });
+        }
+        
+        // Render quarterly analysis table
+        function renderQuarterlyTable() {
+            const tableBody = document.getElementById('quarterlyTableBody');
+            tableBody.innerHTML = '';
+            
+            const quarterlyResults = calculateQuarterlyTotals();
+            const quarterlyTotals = quarterlyResults.totals;
+            const categoryQuarterlyTotals = quarterlyResults.categoryTotals;
+            
+            // Calculate percentage changes between quarters
+            const quarterValues = [quarterlyTotals.Q1, quarterlyTotals.Q2, quarterlyTotals.Q3, quarterlyTotals.Q4];
+            const quarterChanges = calculateQuarterlyPercentageChanges(quarterValues);
+            
+            // Add total row
+            let totalRow = '<tr class="quarter-total"><td><strong>Total Expense</strong></td>';
+            totalRow += `<td>${formatInLakhs(quarterlyTotals.Q1)}</td>`;
+            totalRow += `<td>${formatInLakhs(quarterlyTotals.Q2)}</td>`;
+            totalRow += `<td><span class="quarter-change ${getPercentageClass(quarterChanges[1])}">${formatPercentage(quarterChanges[1])}</span></td>`;
+            totalRow += `<td>${formatInLakhs(quarterlyTotals.Q3)}</td>`;
+            totalRow += `<td><span class="quarter-change ${getPercentageClass(quarterChanges[2])}">${formatPercentage(quarterChanges[2])}</span></td>`;
+            totalRow += `<td>${formatInLakhs(quarterlyTotals.Q4)}</td>`;
+            totalRow += `<td><span class="quarter-change ${getPercentageClass(quarterChanges[3])}">${formatPercentage(quarterChanges[3])}</span></td>`;
+            
+            // Calculate annual total
+            const annualTotal = quarterlyTotals.Q1 + quarterlyTotals.Q2 + quarterlyTotals.Q3 + quarterlyTotals.Q4;
+            totalRow += `<td>${formatInLakhs(annualTotal)}</td>`;
+            
+            totalRow += '</tr>';
+            tableBody.innerHTML = totalRow;
+            
+            // Add major categories
+            expenseData.categoryTypes.major.forEach(category => {
+                const q1 = categoryQuarterlyTotals[category].Q1;
+                const q2 = categoryQuarterlyTotals[category].Q2;
+                const q3 = categoryQuarterlyTotals[category].Q3;
+                const q4 = categoryQuarterlyTotals[category].Q4;
+                
+                const catValues = [q1, q2, q3, q4];
+                const catChanges = calculateQuarterlyPercentageChanges(catValues);
+                
+                let row = `<tr class="quarter-header"><td>${category}</td>`;
+                row += `<td>${formatCurrency(q1)}</td>`;
+                row += `<td>${formatCurrency(q2)}</td>`;
+                row += `<td><span class="quarter-change ${getPercentageClass(catChanges[1])}">${formatPercentage(catChanges[1])}</span></td>`;
+                row += `<td>${formatCurrency(q3)}</td>`;
+                row += `<td><span class="quarter-change ${getPercentageClass(catChanges[2])}">${formatPercentage(catChanges[2])}</span></td>`;
+                row += `<td>${formatCurrency(q4)}</td>`;
+                row += `<td><span class="quarter-change ${getPercentageClass(catChanges[3])}">${formatPercentage(catChanges[3])}</span></td>`;
+                
+                // Calculate annual total for this category
+                const catAnnualTotal = q1 + q2 + q3 + q4;
+                row += `<td>${formatCurrency(catAnnualTotal)}</td>`;
+                
+                row += '</tr>';
+                tableBody.innerHTML += row;
+            });
+            
+            // Add operational categories
+            expenseData.categoryTypes.operational.forEach(category => {
+                const q1 = categoryQuarterlyTotals[category].Q1;
+                const q2 = categoryQuarterlyTotals[category].Q2;
+                const q3 = categoryQuarterlyTotals[category].Q3;
+                const q4 = categoryQuarterlyTotals[category].Q4;
+                
+                const catValues = [q1, q2, q3, q4];
+                const catChanges = calculateQuarterlyPercentageChanges(catValues);
+                
+                let row = `<tr><td>${category}</td>`;
+                row += `<td>${formatCurrency(q1)}</td>`;
+                row += `<td>${formatCurrency(q2)}</td>`;
+                row += `<td><span class="quarter-change ${getPercentageClass(catChanges[1])}">${formatPercentage(catChanges[1])}</span></td>`;
+                row += `<td>${formatCurrency(q3)}</td>`;
+                row += `<td><span class="quarter-change ${getPercentageClass(catChanges[2])}">${formatPercentage(catChanges[2])}</span></td>`;
+                row += `<td>${formatCurrency(q4)}</td>`;
+                row += `<td><span class="quarter-change ${getPercentageClass(catChanges[3])}">${formatPercentage(catChanges[3])}</span></td>`;
+                
+                // Calculate annual total for this category
+                const catAnnualTotal = q1 + q2 + q3 + q4;
+                row += `<td>${formatCurrency(catAnnualTotal)}</td>`;
+                
+                row += '</tr>';
+                tableBody.innerHTML += row;
+            });
+        }
+        
+        // Render quarterly breakdown tables
+        function renderQuarterlyBreakdownTables() {
+            const quarterlyResults = calculateQuarterlyTotals();
+            const categoryQuarterlyTotals = quarterlyResults.categoryTotals;
+            const quarterlyTotals = quarterlyResults.totals;
+            
+            // Q1 Breakdown
+            const q1Body = document.getElementById('q1BreakdownBody');
+            q1Body.innerHTML = '';
+            
+            // Q2 Breakdown
+            const q2Body = document.getElementById('q2BreakdownBody');
+            q2Body.innerHTML = '';
+            
+            // Q3 Breakdown
+            const q3Body = document.getElementById('q3BreakdownBody');
+            q3Body.innerHTML = '';
+            
+            // Q4 Breakdown
+            const q4BreakdownBody = document.getElementById('q4BreakdownBody');
+            q4BreakdownBody.innerHTML = '';
+            
+            // Helper function to render a breakdown table
+            function renderBreakdownTable(tableBody, quarter, monthIndices) {
+                let html = '';
+                
+                // Add rows for each category
+                Object.entries(expenseData.categories).forEach(([category, amounts]) => {
+                    // Skip categories with no data in this quarter
+                    let quarterTotal = 0;
+                    monthIndices.forEach(idx => {
+                        quarterTotal += amounts[idx];
+                    });
+                    
+                    if (quarterTotal === 0) return;
+                    
+                    html += '<tr>';
+                    html += `<td>${category}</td>`;
+                    
+                    // Add monthly values
+                    monthIndices.forEach(idx => {
+                        html += `<td>${formatCurrency(amounts[idx])}</td>`;
+                    });
+                    
+                    // Add quarter total
+                    html += `<td>${formatCurrency(quarterTotal)}</td>`;
+                    
+                    // Add percentage of quarter total
+                    const percentage = (quarterTotal / quarterlyTotals[quarter]) * 100;
+                    html += `<td>${percentage.toFixed(1)}%</td>`;
+                    
+                    html += '</tr>';
+                });
+                
+                tableBody.innerHTML = html;
+            }
+            
+            // Render each quarter breakdown
+            renderBreakdownTable(q1Body, 'Q1', quarterlyData.quarterMonths.Q1);
+            renderBreakdownTable(q2Body, 'Q2', quarterlyData.quarterMonths.Q2);
+            renderBreakdownTable(q3Body, 'Q3', quarterlyData.quarterMonths.Q3);
+            renderBreakdownTable(q4BreakdownBody, 'Q4', quarterlyData.quarterMonths.Q4);
+        }
+        
+        // Render monthly analysis table
+        function renderMonthlyAnalysisTable(filterCategory = 'all', filterChangeType = 'all') {
+            const tableBody = document.getElementById('monthlyAnalysisTableBody');
+            tableBody.innerHTML = '';
+            
+            const monthlyChanges = calculateMonthlyChanges();
+            const extremeChanges = findExtremeMonthlyChanges();
+            
+            // Find the highest increase and decrease for highlighting
+            let highestIncreaseValue = -Infinity;
+            let highestDecreaseValue = Infinity;
+            
+            if (extremeChanges.highestIncreases.length > 0) {
+                highestIncreaseValue = Math.max(...extremeChanges.highestIncreases.map(c => c.change));
+            }
+            if (extremeChanges.highestDecreases.length > 0) {
+                highestDecreaseValue = Math.min(...extremeChanges.highestDecreases.map(c => c.change));
+            }
+            
+            // Helper function to check if a category should be included based on filter
+            function shouldIncludeCategory(category) {
+                if (filterCategory === 'all') return true;
+                if (filterCategory === 'major' && expenseData.categoryTypes.major.includes(category)) return true;
+                if (filterCategory === 'operational' && expenseData.categoryTypes.operational.includes(category)) return true;
+                if (filterCategory === 'hr' && expenseData.categoryTypes.hr.includes(category)) return true;
+                return false;
+            }
+            
+            // Add total row first
+            let totalRow = '<tr class="category-header"><td><strong>Total Expense</strong></td>';
+            monthlyChanges.total.forEach((change, index) => {
+                if (index === 0) {
+                    totalRow += '<td>-</td>';
+                } else {
+                    let cellClass = 'month-change-cell';
+                    if (change === highestIncreaseValue) {
+                        cellClass += ' highest-increase';
+                    } else if (change === highestDecreaseValue) {
+                        cellClass += ' highest-decrease';
+                    }
+                    
+                    totalRow += `<td class="${cellClass}"><span class="${getPercentageClass(change)}">${formatPercentage(change)}</span></td>`;
+                }
+            });
+            totalRow += '</tr>';
+            tableBody.innerHTML = totalRow;
+            
+            // Add rows for each category
+            Object.keys(expenseData.categories).forEach(category => {
+                // Apply category filter
+                if (!shouldIncludeCategory(category)) return;
+                
+                // Apply change type filter
+                if (filterChangeType !== 'all') {
+                    const categoryChanges = monthlyChanges[category];
+                    let shouldInclude = false;
+                    
+                    if (filterChangeType === 'highestIncrease') {
+                        // Check if this category has any of the top 5 increases
+                        shouldInclude = extremeChanges.highestIncreases.some(c => c.category === category);
+                    } else if (filterChangeType === 'highestDecrease') {
+                        // Check if this category has any of the top 5 decreases
+                        shouldInclude = extremeChanges.highestDecreases.some(c => c.category === category);
+                    } else if (filterChangeType === 'stable') {
+                        // Check if all changes are between -5% and 5%
+                        const isStable = categoryChanges.every(change => 
+                            change === null || change === 0 || (change >= -5 && change <= 5)
+                        );
+                        shouldInclude = isStable;
+                    }
+                    
+                    if (!shouldInclude) return;
+                }
+                
+                const changes = monthlyChanges[category];
+                let row = `<tr><td>${category}</td>`;
+                
+                changes.forEach((change, index) => {
+                    if (index === 0) {
+                        row += '<td>-</td>';
+                    } else {
+                        let cellClass = 'month-change-cell';
+                        if (change === highestIncreaseValue) {
+                            cellClass += ' highest-increase';
+                        } else if (change === highestDecreaseValue) {
+                            cellClass += ' highest-decrease';
+                        }
+                        
+                        row += `<td class="${cellClass}"><span class="${getPercentageClass(change)}">${formatPercentage(change)}</span></td>`;
+                    }
+                });
+                
+                row += '</tr>';
+                tableBody.innerHTML += row;
+            });
+            
+            // Update summary statistics
+            updateMonthlyAnalysisSummary(extremeChanges);
+        }
+        
+        // Render employee impact analysis table
+        function renderEmployeeImpactTable(category = 'total') {
+            const tableBody = document.getElementById('employeeImpactTableBody');
+            tableBody.innerHTML = '';
+            
+            const employeeChanges = calculateEmployeeChanges();
+            const monthlyChanges = calculateMonthlyChanges();
+            const costPerEmployee = calculateCostPerEmployee();
+            const employeeImpactMetrics = calculateEmployeeImpactMetrics();
+            
+            // Get changes for selected category
+            const expenseChanges = monthlyChanges[category] || [];
+            const perEmployeeCosts = costPerEmployee[category] || [];
+            const growthDifferences = employeeImpactMetrics[category] ? employeeImpactMetrics[category].growthDifference : [];
+            
+            // Calculate employee growth indicator
+            function getEmployeeGrowthIndicator(change) {
+                if (change === null) return '';
+                if (change > 10) return '<span class="employee-growth-indicator growth-high"></span>';
+                if (change > 0) return '<span class="employee-growth-indicator growth-medium"></span>';
+                if (change < 0) return '<span class="employee-growth-indicator growth-low"></span>';
+                return '<span class="employee-growth-indicator growth-medium"></span>';
+            }
+            
+            // Add employee count row
+            let employeeRow = '<tr><td class="employee-count-cell">Employee Count</td>';
+            expenseData.employeeStrength.forEach((count, index) => {
+                employeeRow += `<td class="employee-count-cell">${count}`;
+                if (index > 0 && employeeChanges[index] !== null) {
+                    employeeRow += `<br><span class="month-change ${getPercentageClass(employeeChanges[index])}">${formatPercentage(employeeChanges[index])}</span>`;
+                }
+                employeeRow += ` ${getEmployeeGrowthIndicator(employeeChanges[index])}</td>`;
+            });
+            employeeRow += '</tr>';
+            tableBody.innerHTML = employeeRow;
+            
+            // Add expense per employee row
+            let perEmployeeRow = '<tr><td class="expense-per-employee-cell">Cost per Employee</td>';
+            perEmployeeCosts.forEach((cost, index) => {
+                perEmployeeRow += `<td class="expense-per-employee-cell">₹${cost.toFixed(0)}</td>`;
+            });
+            perEmployeeRow += '</tr>';
+            tableBody.innerHTML += perEmployeeRow;
+            
+            // Add expense growth row
+            let expenseGrowthRow = '<tr><td>Expense Growth</td>';
+            expenseChanges.forEach((change, index) => {
+                if (index === 0) {
+                    expenseGrowthRow += '<td>-</td>';
+                } else {
+                    expenseGrowthRow += `<td><span class="${getPercentageClass(change)}">${formatPercentage(change)}</span></td>`;
+                }
+            });
+            expenseGrowthRow += '</tr>';
+            tableBody.innerHTML += expenseGrowthRow;
+            
+            // Add growth difference row (expense growth - employee growth)
+            let growthDiffRow = '<tr><td>Growth Difference<br><small>(Expense - Employee)</small></td>';
+            growthDifferences.forEach((diff, index) => {
+                if (index === 0) {
+                    growthDiffRow += '<td>-</td>';
+                } else if (diff === null) {
+                    growthDiffRow += '<td>-</td>';
+                } else {
+                    const efficiencyClass = getEfficiencyClass(diff);
+                    growthDiffRow += `<td><span class="${getPercentageClass(diff)} ${efficiencyClass}">${formatPercentage(diff)}</span></td>`;
+                }
+            });
+            growthDiffRow += '</tr>';
+            tableBody.innerHTML += growthDiffRow;
+            
+            // Add correlation row
+            const correlation = calculateCorrelation(category === 'total' ? 'total' : category);
+            let correlationRow = '<tr><td>Correlation with Employees</td>';
+            correlationRow += `<td colspan="11" style="text-align: center;"><span class="correlation-badge ${getCorrelationClass(correlation)}">${formatCorrelation(correlation)} (${correlation.toFixed(2)})</span></td>`;
+            correlationRow += '</tr>';
+            tableBody.innerHTML += correlationRow;
+            
+            // Update summary statistics
+            updateEmployeeImpactSummary(employeeImpactMetrics, category);
+        }
+        
+        // Update monthly analysis summary statistics
+        function updateMonthlyAnalysisSummary(extremeChanges) {
+            if (!extremeChanges || extremeChanges.highestIncreases.length === 0) return;
+            
+            // Get largest increase
+            const largestIncrease = extremeChanges.highestIncreases[0];
+            const largestIncreaseElement = document.querySelectorAll('.monthly-analysis-stat')[0];
+            largestIncreaseElement.querySelector('.monthly-analysis-value').textContent = 
+                formatPercentage(largestIncrease.change);
+            largestIncreaseElement.querySelector('.monthly-analysis-change').textContent = 
+                `${largestIncrease.monthPair} (${largestIncrease.category})`;
+            
+            // Get largest decrease
+            const largestDecrease = extremeChanges.highestDecreases[0];
+            const largestDecreaseElement = document.querySelectorAll('.monthly-analysis-stat')[1];
+            largestDecreaseElement.querySelector('.monthly-analysis-value').textContent = 
+                formatPercentage(largestDecrease.change);
+            largestDecreaseElement.querySelector('.monthly-analysis-change').textContent = 
+                `${largestDecrease.monthPair} (${largestDecrease.category})`;
+            
+            // Find most consistent category (least variation)
+            const monthlyChanges = calculateMonthlyChanges();
+            let mostConsistentCategory = '';
+            let minVariation = Infinity;
+            
+            Object.keys(monthlyChanges).forEach(category => {
+                const changes = monthlyChanges[category].filter(c => c !== null);
+                if (changes.length === 0) return;
+                
+                // Calculate average absolute change
+                const avgChange = changes.reduce((sum, change) => sum + Math.abs(change), 0) / changes.length;
+                
+                if (avgChange < minVariation) {
+                    minVariation = avgChange;
+                    mostConsistentCategory = category;
+                }
+            });
+            
+            const mostConsistentElement = document.querySelectorAll('.monthly-analysis-stat')[2];
+            mostConsistentElement.querySelector('.monthly-analysis-value').textContent = 
+                mostConsistentCategory;
+            mostConsistentElement.querySelector('.monthly-analysis-change').textContent = 
+                `Avg change: ${minVariation.toFixed(1)}%`;
+            
+            // Find most volatile category
+            let mostVolatileCategory = '';
+            let maxVariation = -Infinity;
+            
+            Object.keys(monthlyChanges).forEach(category => {
+                const changes = monthlyChanges[category].filter(c => c !== null);
+                if (changes.length === 0) return;
+                
+                // Calculate max absolute change
+                const maxChange = Math.max(...changes.map(c => Math.abs(c)));
+                
+                if (maxChange > maxVariation) {
+                    maxVariation = maxChange;
+                    mostVolatileCategory = category;
+                }
+            });
+            
+            const mostVolatileElement = document.querySelectorAll('.monthly-analysis-stat')[3];
+            mostVolatileElement.querySelector('.monthly-analysis-value').textContent = 
+                mostVolatileCategory;
+            mostVolatileElement.querySelector('.monthly-analysis-change').textContent = 
+                `Max change: ${maxVariation.toFixed(1)}%`;
+        }
+        
+        // Update employee impact summary statistics
+        function updateEmployeeImpactSummary(employeeImpactMetrics, selectedCategory = 'total') {
+            if (!employeeImpactMetrics || !employeeImpactMetrics.total) return;
+            
+            // Calculate overall growth from Jan to Nov
+            const janEmployees = expenseData.employeeStrength[0];
+            const novEmployees = expenseData.employeeStrength[10];
+            const overallEmployeeGrowth = calculatePercentageChange(janEmployees, novEmployees);
+            
+            // Update employee growth stat
+            const employeeGrowthElement = document.querySelectorAll('.employee-impact-stat')[0];
+            employeeGrowthElement.querySelector('.employee-impact-value').textContent = 
+                formatPercentage(overallEmployeeGrowth);
+            employeeGrowthElement.querySelector('.employee-impact-change').textContent = 
+                `Jan to Nov 2025`;
+            
+            // Update expense per employee growth
+            const expensePerEmpGrowth = employeeImpactMetrics.total.overallGrowthDifference;
+            const expensePerEmpElement = document.querySelectorAll('.employee-impact-stat')[1];
+            expensePerEmpElement.querySelector('.employee-impact-value').textContent = 
+                formatPercentage(expensePerEmpGrowth);
+            expensePerEmpElement.querySelector('.employee-impact-change').innerHTML = 
+                `<span class="${getPercentageClass(expensePerEmpGrowth)}">${formatPercentage(expensePerEmpGrowth)} per employee</span>`;
+            
+            // Find month with lowest cost per employee (most efficient)
+            const costPerEmployee = calculateCostPerEmployee();
+            let mostEfficientMonth = 0;
+            let lowestCostPerEmp = Infinity;
+            
+            costPerEmployee.total.forEach((cost, index) => {
+                if (cost > 0 && cost < lowestCostPerEmp) {
+                    lowestCostPerEmp = cost;
+                    mostEfficientMonth = index;
+                }
+            });
+            
+            const mostEfficientElement = document.querySelectorAll('.employee-impact-stat')[2];
+            mostEfficientElement.querySelector('.employee-impact-value').textContent = 
+                expenseData.employeeStrength[mostEfficientMonth];
+            mostEfficientElement.querySelector('.employee-impact-change').textContent = 
+                `Lowest cost per employee`;
+            
+            // Find best scaling category (lowest growth difference)
+            let bestScalingCategory = '';
+            let bestScalingValue = Infinity;
+            
+            Object.keys(employeeImpactMetrics).forEach(category => {
+                if (category !== 'total' && employeeImpactMetrics[category].overallGrowthDifference !== null) {
+                    const diff = employeeImpactMetrics[category].overallGrowthDifference;
+                    if (diff < bestScalingValue) {
+                        bestScalingValue = diff;
+                        bestScalingCategory = category;
+                    }
+                }
+            });
+            
+            const economiesElement = document.querySelectorAll('.employee-impact-stat')[3];
+            if (bestScalingCategory === 'Food') {
+                const foodCostPerEmp = costPerEmployee.Food[mostEfficientMonth];
+                economiesElement.querySelector('.employee-impact-value').textContent = 
+                    `₹${foodCostPerEmp.toFixed(0)}`;
+                economiesElement.querySelector('.employee-impact-change').textContent = 
+                    `Food cost per employee at peak efficiency`;
+            } else {
+                economiesElement.querySelector('.employee-impact-value').textContent = 
+                    bestScalingCategory || 'Food';
+                economiesElement.querySelector('.employee-impact-change').textContent = 
+                    `Best scaling category`;
+            }
+        }
+        
+        // Initialize monthly trend chart
+        function initializeMonthlyTrendChart() {
+            const monthlyChanges = calculateMonthlyChanges();
+            const monthLabels = ['Feb vs Jan', 'Mar vs Feb', 'Apr vs Mar', 'May vs Apr', 'Jun vs May', 
+                                'Jul vs Jun', 'Aug vs Jul', 'Sep vs Aug', 'Oct vs Sep', 'Nov vs Oct', 'Dec vs Nov'];
+            
+            // Get data for top 5 most volatile categories
+            const allCategories = Object.keys(monthlyChanges);
+            const categoryVolatility = [];
+            
+            allCategories.forEach(category => {
+                const changes = monthlyChanges[category].filter(c => c !== null);
+                if (changes.length === 0) return;
+                
+                // Calculate volatility (standard deviation)
+                const avg = changes.reduce((sum, change) => sum + change, 0) / changes.length;
+                const variance = changes.reduce((sum, change) => sum + Math.pow(change - avg, 2), 0) / changes.length;
+                const stdDev = Math.sqrt(variance);
+                
+                categoryVolatility.push({
+                    category,
+                    volatility: stdDev,
+                    changes
+                });
+            });
+            
+            // Sort by volatility and get top 5
+            const topCategories = categoryVolatility
+                .sort((a, b) => b.volatility - a.volatility)
+                .slice(0, 5)
+                .map(item => item.category);
+            
+            // Prepare datasets
+            const datasets = topCategories.map((category, index) => {
+                const colors = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6'];
+                
+                return {
+                    label: category,
+                    data: monthlyChanges[category].slice(1), // Skip first null value
+                    borderColor: colors[index % colors.length],
+                    backgroundColor: colors[index % colors.length] + '20',
+                    borderWidth: 2,
+                    fill: false,
+                    tension: 0.3,
+                    pointRadius: 4,
+                    pointHoverRadius: 7
+                };
+            });
+            
+            // Destroy existing chart if it exists
+            const chartCanvas = document.getElementById('monthlyTrendChart');
+            const existingChart = Chart.getChart(chartCanvas);
+            if (existingChart) {
+                existingChart.destroy();
+            }
+            
+            // Create new chart
+            const ctx = chartCanvas.getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: monthLabels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${formatPercentage(context.raw)}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Percentage Change'
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Month-to-Month Comparison'
+                            },
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Initialize employee impact chart
+        function initializeEmployeeImpactChart(category = 'total', metric = 'perEmployee') {
+            const monthLabels = expenseData.months.map(m => m.split('-')[0]);
+            const employeeCounts = expenseData.employeeStrength;
+            const costPerEmployee = calculateCostPerEmployee();
+            const employeeImpactMetrics = calculateEmployeeImpactMetrics();
+            
+            // Destroy existing chart if it exists
+            const chartCanvas = document.getElementById('employeeImpactChart');
+            const existingChart = Chart.getChart(chartCanvas);
+            if (existingChart) {
+                existingChart.destroy();
+            }
+            
+            let datasets = [];
+            let yAxisLabel = '';
+            let yAxisCallback = null;
+            
+            if (metric === 'perEmployee') {
+                // Cost per employee over time
+                const costs = category === 'total' ? costPerEmployee.total : costPerEmployee[category] || Array(12).fill(0);
+                
+                datasets = [{
+                    label: `Cost per Employee (${category})`,
+                    data: costs,
+                    borderColor: '#16a085',
+                    backgroundColor: 'rgba(22, 160, 133, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.3,
+                    pointBackgroundColor: '#16a085',
+                    pointRadius: 5,
+                    pointHoverRadius: 8
+                }];
+                
+                yAxisLabel = 'Cost per Employee (₹)';
+                yAxisCallback = function(value) {
+                    return '₹' + formatNumber(value);
+                };
+            } else if (metric === 'correlation') {
+                // Scatter plot of employee count vs expense
+                let expenses = [];
+                if (category === 'total') {
+                    expenses = calculateMonthlyTotals();
+                } else {
+                    expenses = expenseData.categories[category] || Array(12).fill(0);
+                }
+                
+                // Prepare scatter plot data
+                const scatterData = [];
+                for (let i = 0; i < employeeCounts.length; i++) {
+                    if (employeeCounts[i] > 0 && expenses[i] > 0) {
+                        scatterData.push({
+                            x: employeeCounts[i],
+                            y: expenses[i]
+                        });
+                    }
+                }
+                
+                // Calculate linear regression for trend line
+                const n = scatterData.length;
+                let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+                
+                scatterData.forEach(point => {
+                    sumX += point.x;
+                    sumY += point.y;
+                    sumXY += point.x * point.y;
+                    sumX2 += point.x * point.x;
+                });
+                
+                const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+                const intercept = (sumY - slope * sumX) / n;
+                
+                // Create trend line data
+                const minX = Math.min(...scatterData.map(p => p.x));
+                const maxX = Math.max(...scatterData.map(p => p.x));
+                const trendLine = [
+                    { x: minX, y: slope * minX + intercept },
+                    { x: maxX, y: slope * maxX + intercept }
+                ];
+                
+                datasets = [
+                    {
+                        label: 'Employee vs Expense',
+                        data: scatterData,
+                        backgroundColor: '#3498db',
+                        borderColor: '#3498db',
+                        type: 'scatter',
+                        pointRadius: 6,
+                        pointHoverRadius: 10
+                    },
+                    {
+                        label: 'Trend Line',
+                        data: trendLine,
+                        borderColor: '#e74c3c',
+                        backgroundColor: 'transparent',
+                        borderWidth: 2,
+                        type: 'line',
+                        fill: false,
+                        pointRadius: 0
+                    }
+                ];
+                
+                yAxisLabel = 'Expense (₹)';
+                yAxisCallback = function(value) {
+                    return '₹' + (value / 100000).toFixed(1) + 'L';
+                };
+            } else if (metric === 'growthComparison') {
+                // Employee growth vs expense growth
+                const employeeChanges = calculateEmployeeChanges();
+                const monthlyChanges = calculateMonthlyChanges();
+                const expenseChanges = category === 'total' ? monthlyChanges.total : monthlyChanges[category] || Array(12).fill(null);
+                
+                datasets = [
+                    {
+                        label: 'Employee Growth',
+                        data: employeeChanges,
+                        borderColor: '#3498db',
+                        backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.3,
+                        pointBackgroundColor: '#3498db',
+                        pointRadius: 5,
+                        pointHoverRadius: 8
+                    },
+                    {
+                        label: `${category} Expense Growth`,
+                        data: expenseChanges,
+                        borderColor: '#e74c3c',
+                        backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.3,
+                        pointBackgroundColor: '#e74c3c',
+                        pointRadius: 5,
+                        pointHoverRadius: 8
+                    }
+                ];
+                
+                yAxisLabel = 'Percentage Change';
+                yAxisCallback = function(value) {
+                    return value + '%';
+                };
+            }
+            
+            // Create new chart
+            const ctx = chartCanvas.getContext('2d');
+            new Chart(ctx, {
+                type: metric === 'correlation' ? 'scatter' : 'line',
+                data: {
+                    labels: metric === 'correlation' ? [] : monthLabels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    if (metric === 'correlation') {
+                                        return `Employees: ${context.parsed.x}, Expense: ${formatCurrency(context.parsed.y)}`;
+                                    } else {
+                                        if (context.datasetIndex === 0 && metric === 'growthComparison') {
+                                            return `Employee Growth: ${formatPercentage(context.raw)}`;
+                                        } else if (metric === 'perEmployee') {
+                                            return `Cost per Employee: ₹${context.raw.toFixed(0)}`;
+                                        } else {
+                                            return `${context.dataset.label}: ${formatPercentage(context.raw)}`;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            title: {
+                                display: true,
+                                text: yAxisLabel
+                            },
+                            ticks: {
+                                callback: yAxisCallback
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: metric === 'correlation' ? 'Employee Count' : 'Month'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Update per employee chart based on selected category
+        function updatePerEmployeeChart(category) {
+            const costPerEmployee = calculateCostPerEmployee();
+            const monthLabels = expenseData.months.map(m => m.split('-')[0]);
+            
+            let data = [];
+            let label = '';
+            
+            if (category === 'total') {
+                data = costPerEmployee.total;
+                label = 'Total Cost per Employee';
+            } else {
+                data = costPerEmployee[category] || Array(12).fill(0);
+                label = `${category} Cost per Employee`;
+            }
+            
+            // Calculate percentage changes
+            const changes = calculateQuarterlyPercentageChanges(data);
+            
+            // Update trend indicator
+            const trendIndicator = document.getElementById('categoryTrendIndicator');
+            if (changes[changes.length - 2]) {
+                const lastChange = changes[changes.length - 2];
+                if (lastChange > 0) {
+                    trendIndicator.innerHTML = `<span class="trend-up"><i class="fas fa-arrow-up"></i> ${lastChange.toFixed(1)}% vs previous month</span>`;
+                } else if (lastChange < 0) {
+                    trendIndicator.innerHTML = `<span class="trend-down"><i class="fas fa-arrow-down"></i> ${Math.abs(lastChange).toFixed(1)}% vs previous month</span>`;
+                } else {
+                    trendIndicator.innerHTML = `<span class="trend-neutral">No change vs previous month</span>`;
+                }
+            } else {
+                trendIndicator.innerHTML = '';
+            }
+            
+            // Destroy existing chart if it exists
+            const chartCanvas = document.getElementById('perEmployeeChart');
+            const existingChart = Chart.getChart(chartCanvas);
+            if (existingChart) {
+                existingChart.destroy();
+            }
+            
+            // Create new chart
+            const ctx = chartCanvas.getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: monthLabels,
+                    datasets: [{
+                        label: label,
+                        data: data,
+                        borderColor: '#9b59b6',
+                        backgroundColor: 'rgba(155, 89, 182, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.3,
+                        pointBackgroundColor: '#9b59b6',
+                        pointRadius: 5,
+                        pointHoverRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const value = context.raw;
+                                    const index = context.dataIndex;
+                                    let tooltipText = `Cost per Employee: ₹${value.toFixed(0)}`;
+                                    
+                                    // Add percentage change in tooltip if available
+                                    if (index > 0 && changes[index] !== null) {
+                                        tooltipText += ` (${formatPercentage(changes[index])} vs ${monthLabels[index-1]})`;
+                                    }
+                                    
+                                    return tooltipText;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '₹' + formatNumber(value);
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: 'Cost per Employee (₹)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Month'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Initialize quarterly chart
+        function initializeQuarterlyChart() {
+            const quarterlyResults = calculateQuarterlyTotals();
+            const quarterlyTotals = quarterlyResults.totals;
+            const categoryQuarterlyTotals = quarterlyResults.categoryTotals;
+            
+            const quarterLabels = ['Q1', 'Q2', 'Q3', 'Q4'];
+            
+            // Prepare data for top 5 categories plus total
+            const topCategories = ['Total Expense', 'TICEL', 'Food', 'Transport', 'House keeping', 'Security'];
+            
+            const datasets = topCategories.map((category, index) => {
+                const colors = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c'];
+                
+                let data = [];
+                
+                if (category === 'Total Expense') {
+                    data = [quarterlyTotals.Q1, quarterlyTotals.Q2, quarterlyTotals.Q3, quarterlyTotals.Q4];
+                } else {
+                    data = [
+                        categoryQuarterlyTotals[category].Q1,
+                        categoryQuarterlyTotals[category].Q2,
+                        categoryQuarterlyTotals[category].Q3,
+                        categoryQuarterlyTotals[category].Q4
+                    ];
+                }
+                
+                return {
+                    label: category,
+                    data: data,
+                    backgroundColor: colors[index % colors.length],
+                    borderColor: colors[index % colors.length],
+                    borderWidth: 2
+                };
+            });
+            
+            // Destroy existing chart if it exists
+            const chartCanvas = document.getElementById('quarterlyChart');
+            const existingChart = Chart.getChart(chartCanvas);
+            if (existingChart) {
+                existingChart.destroy();
+            }
+            
+            // Create new chart
+            const ctx = chartCanvas.getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: quarterLabels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${formatCurrency(context.raw)}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '₹' + (value / 100000).toFixed(1) + 'L';
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: 'Expense (in Lakhs)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Quarter'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Initialize quarterly trend chart
+        function initializeQuarterlyTrendChart(category = 'total') {
+            const quarterlyResults = calculateQuarterlyTotals();
+            const quarterlyTotals = quarterlyResults.totals;
+            const categoryQuarterlyTotals = quarterlyResults.categoryTotals;
+            
+            const quarterLabels = ['Q1', 'Q2', 'Q3', 'Q4'];
+            
+            let data = [];
+            let label = '';
+            
+            if (category === 'total') {
+                data = [quarterlyTotals.Q1, quarterlyTotals.Q2, quarterlyTotals.Q3, quarterlyTotals.Q4];
+                label = 'Total Quarterly Expense';
+            } else {
+                data = [
+                    categoryQuarterlyTotals[category].Q1,
+                    categoryQuarterlyTotals[category].Q2,
+                    categoryQuarterlyTotals[category].Q3,
+                    categoryQuarterlyTotals[category].Q4
+                ];
+                label = `${category} Quarterly Expense`;
+            }
+            
+            // Calculate percentage changes
+            const changes = calculateQuarterlyPercentageChanges(data);
+            
+            // Destroy existing chart if it exists
+            const chartCanvas = document.getElementById('quarterlyTrendChart');
+            const existingChart = Chart.getChart(chartCanvas);
+            if (existingChart) {
+                existingChart.destroy();
+            }
+            
+            // Create new chart
+            const ctx = chartCanvas.getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: quarterLabels,
+                    datasets: [{
+                        label: label,
+                        data: data,
+                        borderColor: '#9b59b6',
+                        backgroundColor: 'rgba(155, 89, 182, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.3,
+                        pointBackgroundColor: '#9b59b6',
+                        pointRadius: 6,
+                        pointHoverRadius: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const value = context.raw;
+                                    const index = context.dataIndex;
+                                    let tooltipText = `${label}: ${formatCurrency(value)}`;
+                                    
+                                    // Add percentage change in tooltip if available
+                                    if (index > 0 && changes[index] !== null) {
+                                        tooltipText += ` (${formatPercentage(changes[index])} vs ${quarterLabels[index-1]})`;
+                                    }
+                                    
+                                    return tooltipText;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '₹' + (value / 100000).toFixed(1) + 'L';
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: 'Expense (in Lakhs)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Quarter'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize charts
+        function initializeCharts() {
+            const monthlyTotals = calculateMonthlyTotals();
+            const monthLabels = expenseData.months.map(m => m.split('-')[0]);
+            
+            // Total Expense Chart
+            const totalCtx = document.getElementById('totalExpenseChart').getContext('2d');
+            new Chart(totalCtx, {
+                type: 'line',
+                data: {
+                    labels: monthLabels,
+                    datasets: [{
+                        label: 'Total Monthly Expense',
+                        data: monthlyTotals,
+                        borderColor: '#e74c3c',
+                        backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `Expense: ₹${(context.raw / 100000).toFixed(2)}L`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '₹' + (value / 100000).toFixed(1) + 'L';
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: 'Expense (in Lakhs)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Month'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Category Expense Chart (stacked bar)
+            const categoryCtx = document.getElementById('categoryExpenseChart').getContext('2d');
+            
+            // Get top 5 categories by average monthly expense
+            const categoryAverages = Object.entries(expenseData.categories).map(([category, amounts]) => {
+                const validAmounts = amounts.filter(a => a > 0);
+                const avg = validAmounts.length > 0 ? 
+                    validAmounts.reduce((sum, val) => sum + val, 0) / validAmounts.length : 0;
+                return { category, avg };
+            });
+            
+            // Sort by average and get top 5
+            const topCategories = categoryAverages
+                .filter(item => item.avg > 0)
+                .sort((a, b) => b.avg - a.avg)
+                .slice(0, 5)
+                .map(item => item.category);
+            
+            // Prepare dataset for top categories
+            const categoryDatasets = topCategories.map((category, index) => {
+                const colors = ['#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#e74c3c'];
+                return {
+                    label: category,
+                    data: expenseData.categories[category],
+                    backgroundColor: colors[index % colors.length],
+                    borderColor: colors[index % colors.length],
+                    borderWidth: 1
+                };
+            });
+            
+            new Chart(categoryCtx, {
+                type: 'bar',
+                data: {
+                    labels: monthLabels,
+                    datasets: categoryDatasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${formatCurrency(context.raw)}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            stacked: true,
+                            title: {
+                                display: true,
+                                text: 'Month'
+                            }
+                        },
+                        y: {
+                            stacked: true,
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '₹' + (value / 100000).toFixed(1) + 'L';
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: 'Expense (in Lakhs)'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Employee Strength Chart
+            const employeeCtx = document.getElementById('employeeChart').getContext('2d');
+            new Chart(employeeCtx, {
+                type: 'bar',
+                data: {
+                    labels: monthLabels,
+                    datasets: [{
+                        label: 'Employee Strength',
+                        data: expenseData.employeeStrength,
+                        backgroundColor: 'rgba(52, 152, 219, 0.7)',
+                        borderColor: '#3498db',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Number of Employees'
+                            },
+                            ticks: {
+                                stepSize: 20
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Month'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Initialize per employee chart
+            updatePerEmployeeChart('total');
+            
+            // Initialize quarterly charts
+            initializeQuarterlyChart();
+            initializeQuarterlyTrendChart('total');
+            
+            // Initialize monthly analysis chart
+            initializeMonthlyTrendChart();
+            
+            // Initialize employee impact chart
+            initializeEmployeeImpactChart('total', 'perEmployee');
+        }
+
+        // Initialize tabs functionality
+        function initializeTabs() {
+            const tabs = document.querySelectorAll('.tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    // Remove active class from all tabs and contents
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tabContents.forEach(c => c.classList.remove('active'));
+                    
+                    // Add active class to clicked tab
+                    tab.classList.add('active');
+                    
+                    // Show corresponding content
+                    const tabId = tab.getAttribute('data-tab');
+                    document.getElementById(`${tabId}-tab`).classList.add('active');
+                    
+                    // If per employee tab is clicked, ensure chart is updated
+                    if (tabId === 'perEmployee') {
+                        const selectedCategory = document.getElementById('perEmployeeCategorySelect').value;
+                        updatePerEmployeeChart(selectedCategory);
+                    }
+                    
+                    // If quarterly tab is clicked, ensure charts are updated
+                    if (tabId === 'quarterly') {
+                        initializeQuarterlyChart();
+                        const selectedCategory = document.getElementById('quarterCategorySelect').value;
+                        initializeQuarterlyTrendChart(selectedCategory);
+                    }
+                    
+                    // If monthly tab is clicked, ensure charts are updated
+                    if (tabId === 'monthly') {
+                        initializeMonthlyTrendChart();
+                        renderMonthlyAnalysisTable();
+                    }
+                    
+                    // If employee impact tab is clicked, ensure charts and tables are updated
+                    if (tabId === 'employeeImpact') {
+                        const selectedCategory = document.getElementById('employeeImpactCategoryFilter').value;
+                        const selectedMetric = document.getElementById('employeeImpactMetricFilter').value;
+                        initializeEmployeeImpactChart(selectedCategory, selectedMetric);
+                        renderEmployeeImpactTable(selectedCategory);
+                    }
+                });
+            });
+            
+            // Initialize quarter tabs
+            const quarterTabs = document.querySelectorAll('.quarter-tab');
+            const quarterContents = document.querySelectorAll('.quarter-content');
+            
+            quarterTabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    // Remove active class from all quarter tabs and contents
+                    quarterTabs.forEach(t => t.classList.remove('active'));
+                    quarterContents.forEach(c => c.classList.remove('active'));
+                    
+                    // Add active class to clicked tab
+                    tab.classList.add('active');
+                    
+                    // Show corresponding content
+                    const quarterId = tab.getAttribute('data-quarter');
+                    document.getElementById(`quarter-${quarterId}`).classList.add('active');
+                });
+            });
+        }
+
+        // Initialize filter buttons
+        function initializeFilters() {
+            const filterButtons = document.querySelectorAll('.filter-btn');
+            
+            filterButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    // Remove active class from all buttons
+                    filterButtons.forEach(btn => btn.classList.remove('active'));
+                    
+                    // Add active class to clicked button
+                    button.classList.add('active');
+                    
+                    // Filter table
+                    const filter = button.getAttribute('data-category');
+                    renderExpenseTable(filter);
+                });
+            });
+        }
+        
+        // Initialize per employee category selector
+        function initializePerEmployeeSelector() {
+            const selector = document.getElementById('perEmployeeCategorySelect');
+            
+            selector.addEventListener('change', function() {
+                updatePerEmployeeChart(this.value);
+            });
+        }
+        
+        // Initialize quarterly category selector
+        function initializeQuarterlyCategorySelector() {
+            const selector = document.getElementById('quarterCategorySelect');
+            
+            selector.addEventListener('change', function() {
+                initializeQuarterlyTrendChart(this.value);
+            });
+        }
+        
+        // Initialize monthly analysis filters
+        function initializeMonthlyAnalysisFilters() {
+            const categoryFilter = document.getElementById('monthlyAnalysisCategoryFilter');
+            const monthFilter = document.getElementById('monthlyAnalysisMonthFilter');
+            
+            categoryFilter.addEventListener('change', function() {
+                renderMonthlyAnalysisTable(this.value, monthFilter.value);
+            });
+            
+            monthFilter.addEventListener('change', function() {
+                renderMonthlyAnalysisTable(categoryFilter.value, this.value);
+            });
+        }
+        
+        // Initialize employee impact filters
+        function initializeEmployeeImpactFilters() {
+            const categoryFilter = document.getElementById('employeeImpactCategoryFilter');
+            const metricFilter = document.getElementById('employeeImpactMetricFilter');
+            
+            categoryFilter.addEventListener('change', function() {
+                const selectedMetric = metricFilter.value;
+                initializeEmployeeImpactChart(this.value, selectedMetric);
+                renderEmployeeImpactTable(this.value);
+            });
+            
+            metricFilter.addEventListener('change', function() {
+                const selectedCategory = categoryFilter.value;
+                initializeEmployeeImpactChart(selectedCategory, this.value);
+            });
+        }
+
+        // Initialize the dashboard
+        document.addEventListener('DOMContentLoaded', () => {
+            renderExpenseTable();
+            renderPerEmployeeTable();
+            renderQuarterlyTable();
+            renderQuarterlyBreakdownTables();
+            renderMonthlyAnalysisTable();
+            renderEmployeeImpactTable('total');
+            initializeCharts();
+            initializeTabs();
+            initializeFilters();
+            initializePerEmployeeSelector();
+            initializeQuarterlyCategorySelector();
+            initializeMonthlyAnalysisFilters();
+            initializeEmployeeImpactFilters();
+            
+            // Update quarterly summary stats
+            const quarterlyResults = calculateQuarterlyTotals();
+            const quarterlyTotals = quarterlyResults.totals;
+            
+            // Update Q1 value
+            document.querySelectorAll('.quarterly-stat')[0].querySelector('.quarterly-value').textContent = 
+                formatInLakhs(quarterlyTotals.Q1);
+            
+            // Update Q2 value and percentage
+            const q2Change = calculatePercentageChange(quarterlyTotals.Q1, quarterlyTotals.Q2);
+            const q2Element = document.querySelectorAll('.quarterly-stat')[1];
+            q2Element.querySelector('.quarterly-value').textContent = formatInLakhs(quarterlyTotals.Q2);
+            q2Element.querySelector('.quarterly-change').innerHTML = 
+                `<span class="${getPercentageClass(q2Change)}">${formatPercentage(q2Change)} vs Q1</span>`;
+            
+            // Update Q3 value and percentage
+            const q3Change = calculatePercentageChange(quarterlyTotals.Q2, quarterlyTotals.Q3);
+            const q3Element = document.querySelectorAll('.quarterly-stat')[2];
+            q3Element.querySelector('.quarterly-value').textContent = formatInLakhs(quarterlyTotals.Q3);
+            q3Element.querySelector('.quarterly-change').innerHTML = 
+                `<span class="${getPercentageClass(q3Change)}">${formatPercentage(q3Change)} vs Q2</span>`;
+            
+            // Update Q4 value and percentage
+            const q4Change = calculatePercentageChange(quarterlyTotals.Q3, quarterlyTotals.Q4);
+            const q4Element = document.querySelectorAll('.quarterly-stat')[3];
+            q4Element.querySelector('.quarterly-value').textContent = formatInLakhs(quarterlyTotals.Q4);
+            q4Element.querySelector('.quarterly-change').innerHTML = 
+                `<span class="${getPercentageClass(q4Change)}">${formatPercentage(q4Change)} vs Q3</span>`;
+        });
+    </script>
+</body>
+</html>
